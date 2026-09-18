@@ -1,8 +1,9 @@
 // Loopable Protocol 0.1 - test vector generator
 //
-// Deterministic generator for the vectors that cover the three blocking
-// constructions: first-device authorization, HPKE object-key wrapping, and
-// versioned-object AAD.
+// Deterministic generator for the reference vectors covering identifier
+// derivation, canonical CBOR, event signatures, device authorization, account
+// and instance authorization records, relationship events, federation request
+// signing, streaming media encryption, and username grammar.
 //
 // Run:  node test-vectors/generate.mjs
 // Output: test-vectors/*.json
@@ -735,6 +736,1104 @@ function fix3(hpke) {
 }
 
 // ---------------------------------------------------------------------------
+// Base32 (RFC 4648, lowercase, no padding) - identifier text forms (spec/10)
+// ---------------------------------------------------------------------------
+
+const BASE32_ALPHABET = "abcdefghijklmnopqrstuvwxyz234567";
+
+function base32lower(buf) {
+  let bits = 0;
+  let value = 0;
+  let out = "";
+  for (const byte of buf) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      out += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) {
+    out += BASE32_ALPHABET[(value << (5 - bits)) & 31];
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Event envelope helper (spec/32, spec/22)
+// ---------------------------------------------------------------------------
+
+// Build an event map, sign it per 22.3, and return everything a vector needs.
+// `signer` is a Node KeyObject (Ed25519 private key) or null (no signature;
+// envelope key 9 omitted).
+function buildEvent({ eventId, eventType, accountId, deviceId, createdAt, predecessors, objectRefs, body, signer }) {
+  const entries = [
+    [0, encText("0.1")],
+    [1, encBytes(eventId)],
+    [2, encUint(eventType)],
+    [3, encBytes(accountId)],
+    [4, encBytes(deviceId)],
+    [5, encUint(createdAt)],
+    [6, encArray(predecessors.map((p) => encBytes(p)))],
+    [7, encArray(objectRefs)],
+    [8, body],
+  ];
+  const unsigned = encMap(entries);
+  const signatureInput = concat("loopable-event-v1\x00", unsigned);
+  const signature = sign(signer, signatureInput);
+  const envelope = encMap([...entries, [9, encBytes(signature)]]);
+  return { unsigned, signatureInput, signature, envelope, eventId };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 4 - identifier derivation and base32 text forms (spec/10)
+// ---------------------------------------------------------------------------
+
+function fix4(f2) {
+  const identityKey = ed25519FromSeed(seed("identity"));
+  const rootKey = ed25519FromSeed(seed("instance-root"));
+
+  const accountId = sha256("loopable-account-id\x00", identityKey.pub);
+  const instanceId = sha256("loopable-instance-id\x00", rootKey.pub);
+  const eventId = seed("event-id").subarray(0, 16);
+  const objectId = seed("object-id").subarray(0, 32);
+  const versionId = seed("version-id").subarray(0, 32);
+  const deviceId = seed("device-id").subarray(0, 16);
+  const requestId = seed("request-id").subarray(0, 16);
+  const keyId = sha256(ed25519FromSeed(seed("operational")).pub).subarray(0, 16);
+
+  const textForms = {
+    account_id: base32lower(accountId),
+    instance_id: base32lower(instanceId),
+    event_id: base32lower(eventId),
+    object_id: base32lower(objectId),
+    version_id: base32lower(versionId),
+    device_id: base32lower(deviceId),
+    request_id: base32lower(requestId),
+    key_id: base32lower(keyId),
+    recipient_key_id: base32lower(f2.recipientKeyId),
+  };
+
+  const positive = section(
+    {
+      inputs: {
+        identity_public_key: hex(identityKey.pub),
+        root_public_key: hex(rootKey.pub),
+        event_id_wire: hex(eventId),
+        object_id_wire: hex(objectId),
+        version_id_wire: hex(versionId),
+        device_id_wire: hex(deviceId),
+        request_id_wire: hex(requestId),
+        key_id_wire: hex(keyId),
+        recipient_key_id_wire: hex(f2.recipientKeyId),
+      },
+      expected: {
+        account_id_wire: hex(accountId),
+        instance_id_wire: hex(instanceId),
+        account_id_text: textForms.account_id,
+        instance_id_text: textForms.instance_id,
+        event_id_text: textForms.event_id,
+        object_id_text: textForms.object_id,
+        version_id_text: textForms.version_id,
+        device_id_text: textForms.device_id,
+        request_id_text: textForms.request_id,
+        key_id_text: textForms.key_id,
+        recipient_key_id_text: textForms.recipient_key_id,
+      },
+      checks: {
+        account_id_derives_from_identity: hex(accountId) === hex(sha256("loopable-account-id\x00", identityKey.pub)),
+        instance_id_derives_from_root: hex(instanceId) === hex(sha256("loopable-instance-id\x00", rootKey.pub)),
+        account_id_text_is_52_chars: textForms.account_id.length === 52,
+        account_id_text_is_lowercase: textForms.account_id === textForms.account_id.toLowerCase(),
+        id16_text_is_26_chars: textForms.event_id.length === 26 && textForms.device_id.length === 26,
+        key_id_is_first_16_bytes_of_key_hash: hex(keyId) === hex(sha256(ed25519FromSeed(seed("operational")).pub).subarray(0, 16)),
+        no_padding_in_text: !/[=]/.test(textForms.object_id),
+      },
+    },
+    "identifiers/valid"
+  );
+
+  const negatives = [
+    section(
+      {
+        reason: "text form contains RFC 4648 padding, which the canonical text form forbids",
+        expected_error: "E_BAD_REQUEST",
+        inputs: { text_form: textForms.object_id + "=" },
+      },
+      "identifiers/negative-padding"
+    ),
+    section(
+      {
+        reason: "text form length does not match the identifier type (52 chars for account_id)",
+        expected_error: "E_BAD_REQUEST",
+        inputs: { text_form: textForms.account_id.slice(0, 50) },
+      },
+      "identifiers/negative-wrong-length"
+    ),
+    section(
+      {
+        reason: "text form contains characters outside the base32 alphabet",
+        expected_error: "E_BAD_REQUEST",
+        inputs: { text_form: "0" + textForms.account_id.slice(1) },
+      },
+      "identifiers/negative-bad-character"
+    ),
+    section(
+      {
+        reason: "uppercase input is accepted only by lowercasing first (input is case-insensitive)",
+        expected_error: null,
+        expected: { text_form_lowercased: textForms.object_id.toUpperCase() },
+      },
+      "identifiers/case-insensitive-input"
+    ),
+  ];
+
+  return { positive, negatives, textForms };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 5 - canonical CBOR positives and rejection cases (spec/30)
+// ---------------------------------------------------------------------------
+
+function fix5() {
+  const intCases = [
+    ["zero", 0, "00"],
+    ["twenty-three", 23, "17"],
+    ["twenty-four", 24, "1818"],
+    ["two-hundred-fifty-five", 255, "18ff"],
+    ["two-hundred-fifty-six", 256, "190100"],
+    ["sixty-five-thousand-five-hundred-thirty-five", 65535, "19ffff"],
+    ["two-to-the-sixteenth", 65536, "1a00010000"],
+    ["two-to-the-thirty-second-minus-one", 4294967295, "1affffffff"],
+    ["two-to-the-thirty-second", 4294967296, "1b0000000100000000"],
+    ["two-to-the-sixty-fourth-minus-one", 18446744073709551615n, "1bffffffffffffffff"],
+  ];
+
+  const positive = [
+    ...intCases.map(([name, value, expectedHex]) =>
+      section(
+        {
+          value: typeof value === "bigint" ? value.toString() : value,
+          cbor: hex(encUint(value)),
+          notes: "preferred fixed-length integer encoding; no expansion",
+          expected_cbor: expectedHex,
+        },
+        `canonical-cbor/int-${name}`
+      )
+    ),
+    section(
+      {
+        value: "",
+        cbor: hex(encBytes(Buffer.alloc(0))),
+        notes: "empty byte string uses a definite-length header",
+      },
+      "canonical-cbor/empty-bytes"
+    ),
+    section(
+      {
+        value: { k1: 1, k2: "longer key", k3: 3 },
+        cbor: hex(encMap([
+          [2, encUint(3)],       // key 2 (length 1)
+          [10, encUint(1)],      // key 10 (length 1)
+          ["x", encText("yo")],  // text key, length 1 sorts before longer
+          ["ab", encUint(2)],    // length 2
+          ["abc", encUint(4)],   // length 3
+        ])),
+        notes: "map keys sort by encoded length then bytewise (30.3); integer and text keys interleave by those rules",
+      },
+      "canonical-cbor/map-ordering"
+    ),
+    section(
+      {
+        value: { a: [1, 2, 3], b: {} },
+        cbor: hex(encMap([
+          ["a", encArray([encUint(1), encUint(2), encUint(3)])],
+          ["b", encMap([])],
+        ])),
+        notes: "nested arrays and maps use definite-length headers",
+      },
+      "canonical-cbor/nested-structure"
+    ),
+    section(
+      {
+        value: "hello",
+        cbor: hex(encText("hello")),
+        notes: "text is valid UTF-8 with no unpaired surrogates",
+      },
+      "canonical-cbor/text"
+    ),
+    section(
+      {
+        value: true /* boolean present in a map */,
+        cbor: hex(encMap([[encKey(5), Buffer.from([0xf5])]])),
+        notes: "booleans are legal CBOR; the protocol prefers omitting optional fields, but a present boolean must still parse (30.2.10)",
+      },
+      "canonical-cbor/boolean"
+    ),
+  ];
+
+  const negativeCbor = (hexStr, notes) =>
+    section(
+      {
+        reason: notes,
+        cbor: hexStr,
+        expected_error: "E_MALFORMED_ENCODING",
+      },
+      `canonical-cbor/negative-${hexStr.slice(0, 8)}`
+    );
+
+  const negatives = [
+    negativeCbor("a201010102", "duplicate integer key 1 in a map (30.8)"),
+    negativeCbor("7f616161ff", "indefinite-length text string (30.2.3)"),
+    negativeCbor("5f414261ff", "indefinite-length byte string (30.2.3)"),
+    negativeCbor("9f0102ff", "indefinite-length array (30.2.4)"),
+    negativeCbor("bf0101ff", "indefinite-length map (30.2.4)"),
+    negativeCbor("1817", "value 23 encoded in two bytes instead of the preferred single byte (30.2.2)"),
+    negativeCbor("1a00000100", "value 256 encoded in five bytes instead of the preferred three (30.2.2)"),
+    negativeCbor("c100", "CBOR semantic tag 1 present; protocol data MUST NOT contain tags (30.2.9)"),
+    negativeCbor("6161c080", "text containing non-shortest-form UTF-8 encoding of NUL"),
+  ];
+
+  return { positives: positive, negatives };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 6 - event envelope signature and unknown integer-key preservation (30.4)
+// ---------------------------------------------------------------------------
+
+function fix6() {
+  const identityKey = ed25519FromSeed(seed("identity"));
+  const deviceA = ed25519FromSeed(seed("device-signing"));
+  const alphaDeviceId = seed("device-id").subarray(0, 16);
+  const betaDeviceId = seed("device-beta").subarray(0, 16);
+  const betaSigning = ed25519FromSeed(seed("device-beta-signing"));
+  const betaEncryption = x25519FromSeed(seed("device-beta-encryption"));
+  const accountId = sha256("loopable-account-id\x00", identityKey.pub);
+  const genesisId = seed("event-id").subarray(0, 16);
+  const eventId = seed("event-device-authorized").subarray(0, 16);
+
+  const body = encMap([
+    [0, encBytes(betaDeviceId)],
+    [1, encBytes(betaSigning.pub)],
+    [2, encBytes(betaEncryption.pub)],
+    [3, encUint(0)],
+  ]);
+
+  // Unknown integer key 17 as a stand-in for a future minor-version extension.
+  const unsignedEntries = [
+    [0, encText("0.1")],
+    [1, encBytes(eventId)],
+    [2, encUint(1)],                              // DEVICE_AUTHORIZED
+    [3, encBytes(accountId)],
+    [4, encBytes(alphaDeviceId)],
+    [5, encUint(1759633200)],
+    [6, encArray([encBytes(genesisId)])],
+    [7, encArray([])],
+    [8, body],
+    [17, encUint(0)],                             // unknown field, must be preserved
+  ];
+  const unsigned = encMap(unsignedEntries);
+  const signatureInput = concat("loopable-event-v1\x00", unsigned);
+  const signature = sign(deviceA.priv, signatureInput);
+  const envelope = encMap([...unsignedEntries, [9, encBytes(signature)]]);
+
+  const positive = section(
+    {
+      inputs: {
+        protocol_version: "0.1",
+        event_id: hex(eventId),
+        event_type: 1,
+        account_id: hex(accountId),
+        device_id: hex(alphaDeviceId),
+        created_at: 1759633200,
+        predecessors: [hex(genesisId)],
+        object_references: [],
+        body_cbor: hex(body),
+      },
+      intermediates: {
+        event_unsigned_cbor: hex(unsigned),
+        event_signature_input: hex(signatureInput),
+        note: "unknown integer key 17 is part of the signed input (30.4)",
+      },
+      expected: {
+        event_envelope_cbor: hex(envelope),
+        event_signature: hex(signature),
+      },
+      checks: {
+        signature_verifies: verify(deviceA.priv, signatureInput, signature) === true,
+      },
+    },
+    "event-signature/unknown-key-preserved"
+  );
+
+  // Negative: re-encoding without the unknown key changes the signed input.
+  const droppedUnsigned = encMap(unsignedEntries.filter(([k]) => k !== 17));
+  const droppedInput = concat("loopable-event-v1\x00", droppedUnsigned);
+  const negatives = [
+    section(
+      {
+        reason: "the verifier dropped unknown integer key 17, so the recomputed signature input differs from the one actually signed",
+        expected_error: "E_SIGNATURE_INVALID",
+        expected: {
+          recomputed_input_without_unknown_key: hex(droppedInput),
+          signature: hex(signature),
+          verifies_over_wrong_input: verify(deviceA.priv, droppedInput, signature),
+        },
+      },
+      "event-signature/negative-unknown-key-dropped"
+    ),
+  ];
+
+  return { positive, negatives };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 7 - device authorization and revocation chain (spec/34, spec/41, spec/42)
+// ---------------------------------------------------------------------------
+
+function fix7() {
+  const identityKey = ed25519FromSeed(seed("identity"));
+  const deviceA = ed25519FromSeed(seed("device-signing"));
+  const deviceB = ed25519FromSeed(seed("device-beta-signing"));
+  const alphaEncryption = x25519FromSeed(seed("device-encryption"));
+  const betaEncryption = x25519FromSeed(seed("device-beta-encryption"));
+  const alphaDeviceId = seed("device-id").subarray(0, 16);
+  const betaDeviceId = seed("device-beta").subarray(0, 16);
+  const accountId = sha256("loopable-account-id\x00", identityKey.pub);
+  const instanceId = sha256("loopable-instance-id\x00", ed25519FromSeed(seed("instance-root")).pub);
+  const created = 1759632400;
+
+  // e0: ACCOUNT_CREATED (genesis), identical construction to first-device-authorization.
+  const firstDeviceA = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(accountId)],
+    [2, encBytes(alphaDeviceId)],
+    [3, encBytes(deviceA.pub)],
+    [4, encBytes(alphaEncryption.pub)],
+    [5, encUint(0)],
+  ]);
+  const firstDeviceSig = sign(identityKey.priv, concat("loopable-first-device-authorization-v1\x00", firstDeviceA));
+  const firstDeviceRecord = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(accountId)],
+    [2, encBytes(alphaDeviceId)],
+    [3, encBytes(deviceA.pub)],
+    [4, encBytes(alphaEncryption.pub)],
+    [5, encUint(0)],
+    [6, encBytes(firstDeviceSig)],
+  ]);
+  const genesisBody = encMap([
+    [0, encBytes(identityKey.pub)],
+    [1, encText("alice")],
+    [2, encBytes(instanceId)],
+    [3, firstDeviceRecord],
+  ]);
+  const e0Id = seed("event-id").subarray(0, 16);
+  const e0 = buildEvent({
+    eventId: e0Id,
+    eventType: 0,
+    accountId,
+    deviceId: Buffer.alloc(0),
+    createdAt: created,
+    predecessors: [],
+    objectRefs: [],
+    body: genesisBody,
+    signer: identityKey.priv,
+  });
+
+  // e1: DEVICE_AUTHORIZED, body per 34.4.
+  const e1Id = seed("event-device-authorized").subarray(0, 16);
+  const e1Body = encMap([
+    [0, encBytes(betaDeviceId)],
+    [1, encBytes(deviceB.pub)],
+    [2, encBytes(betaEncryption.pub)],
+    [3, encUint(0)],
+  ]);
+  const e1 = buildEvent({
+    eventId: e1Id,
+    eventType: 1,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759633200,
+    predecessors: [e0Id],
+    objectRefs: [],
+    body: e1Body,
+    signer: deviceA.priv,
+  });
+
+  // e2: TRUSTED_DEVICE_TRANSFERRED (alpha -> beta), signed by alpha (still trusted).
+  const e2Id = seed("event-transfer").subarray(0, 16);
+  const e2 = buildEvent({
+    eventId: e2Id,
+    eventType: 3,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759633300,
+    predecessors: [e0Id, e1Id],
+    objectRefs: [],
+    body: encMap([[0, encBytes(betaDeviceId)]]),
+    signer: deviceA.priv,
+  });
+
+  // e3: DEVICE_REVOKED targeting alpha, signed by beta (now trusted).
+  const e3Id = seed("event-revoke").subarray(0, 16);
+  const e3 = buildEvent({
+    eventId: e3Id,
+    eventType: 2,
+    accountId,
+    deviceId: betaDeviceId,
+    createdAt: 1759633400,
+    predecessors: [e0Id, e1Id, e2Id],
+    objectRefs: [],
+    body: encMap([[0, encBytes(alphaDeviceId)]]),
+    signer: deviceB.priv,
+  });
+
+  // e4 (positive): POST_CREATED by beta, still authorized and trusted.
+  const objectId = seed("object-id");
+  const versionId = seed("version-id");
+  const e4Id = seed("event-post").subarray(0, 16);
+  const e4 = buildEvent({
+    eventId: e4Id,
+    eventType: 13,
+    accountId,
+    deviceId: betaDeviceId,
+    createdAt: 1759633500,
+    predecessors: [e0Id, e1Id, e2Id, e3Id],
+    objectRefs: [encMap([[0, encBytes(Buffer.from(objectId))], [1, encBytes(Buffer.from(versionId))]])],
+    body: encMap([]),
+    signer: deviceB.priv,
+  });
+
+  // e5 (negative): POST_CREATED by alpha after revocation -> E_UNAUTHORIZED_DEVICE.
+  const e5Id = seed("event-post-revoked").subarray(0, 16);
+  const e5 = buildEvent({
+    eventId: e5Id,
+    eventType: 13,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759633600,
+    predecessors: [e0Id, e1Id, e2Id, e3Id],
+    objectRefs: [encMap([[0, encBytes(Buffer.from(objectId))], [1, encBytes(Buffer.from(versionId))]])],
+    body: encMap([]),
+    signer: deviceA.priv,
+  });
+
+  const positive = section(
+    {
+      inputs: {
+        account_id: hex(accountId),
+        genesis_event_id: hex(e0Id),
+        alpha_device_id: hex(alphaDeviceId),
+        beta_device_id: hex(betaDeviceId),
+      },
+      expected: {
+        genesis_event_envelope_cbor: hex(e0.envelope),
+        genesis_event_signature: hex(e0.signature),
+        device_authorized_envelope_cbor: hex(e1.envelope),
+        device_authorized_signature: hex(e1.signature),
+        transfer_envelope_cbor: hex(e2.envelope),
+        transfer_signature: hex(e2.signature),
+        revoke_envelope_cbor: hex(e3.envelope),
+        revoke_signature: hex(e3.signature),
+        post_by_trusted_envelope_cbor: hex(e4.envelope),
+        post_by_trusted_signature: hex(e4.signature),
+      },
+      checks: {
+        genesis_signature_verifies: verify(identityKey.priv, e0.signatureInput, e0.signature),
+        device_auth_signature_verifies: verify(deviceA.priv, e1.signatureInput, e1.signature),
+        transfer_signature_verifies: verify(deviceA.priv, e2.signatureInput, e2.signature),
+        revoke_signature_verifies: verify(deviceB.priv, e3.signatureInput, e3.signature),
+        post_by_trusted_signature_verifies: verify(deviceB.priv, e4.signatureInput, e4.signature),
+        alpha_is_revoked_at_e5: true,
+        beta_is_trusted_at_e5: true,
+      },
+    },
+    "device-authorization/valid-chain"
+  );
+
+  const negatives = [
+    section(
+      {
+        reason: "the revoked device signs a new POST_CREATED event",
+        expected_error: "E_UNAUTHORIZED_DEVICE",
+        expected: {
+          event_envelope_cbor: hex(e5.envelope),
+          event_signature: hex(e5.signature),
+          signature_still_cryptographically_valid: verify(deviceA.priv, e5.signatureInput, e5.signature),
+        },
+      },
+      "device-authorization/revoked-device-signs"
+    ),
+  ];
+
+  return { positive, negatives };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 8 - federation request signature (spec/61)
+// ---------------------------------------------------------------------------
+
+function fix8(f4) {
+  const rootKey = ed25519FromSeed(seed("instance-root"));
+  const opKey = ed25519FromSeed(seed("operational"));
+  const instanceId = sha256("loopable-instance-id\x00", rootKey.pub);
+  const keyId = sha256(opKey.pub).subarray(0, 16);
+  const requestId = seed("request-id").subarray(0, 16);
+  const accountId = sha256("loopable-account-id\x00", ed25519FromSeed(seed("identity")).pub);
+  const ts = 1759634000;
+  const body = Buffer.from("80", "hex"); // canonical CBOR empty array
+  const bodyHash = sha256(body);
+
+  const authEntries = [
+    [0, encText("POST")],
+    [1, encText("example.org")],
+    [2, encText("/v1/objects")],
+    [3, encText("?limit=10&offset=0")],
+    [4, encBytes(requestId)],
+    [5, encUint(ts)],
+    [6, encBytes(bodyHash)],
+  ];
+  const unsigned = encMap(authEntries);
+  const input = concat("loopable-federation-request-v1\x00", unsigned);
+  const sig = sign(opKey.priv, input);
+
+  const b32 = (b) => base32lower(b);
+  const header = `Loopable v=1;instance=${b32(instanceId)};key=${b32(keyId)};request=${b32(requestId)};ts=${ts};sig=${sig.toString("base64url")}`;
+
+  // Client auth per 61.9: same map plus key 7 account_id and `acc` header param.
+  const clientEntries = [...authEntries, [7, encBytes(accountId)]];
+  const clientUnsigned = encMap(clientEntries);
+  const clientInput = concat("loopable-federation-request-v1\x00", clientUnsigned);
+  const clientSig = sign(opKey.priv, clientInput);
+  const clientHeader = `Loopable v=1;instance=${b32(instanceId)};key=${b32(keyId)};request=${b32(requestId)};ts=${ts};acc=${b32(accountId)};sig=${clientSig.toString("base64url")}`;
+
+  const positive = section(
+    {
+      inputs: {
+        instance_id_wire: hex(instanceId),
+        key_id_wire: hex(keyId),
+        request_id_wire: hex(requestId),
+        method: "POST",
+        host: "example.org",
+        path: "/v1/objects",
+        query: "?limit=10&offset=0",
+        timestamp: ts,
+        body_hex: hex(body),
+        body_hash: hex(bodyHash),
+      },
+      intermediates: {
+        request_authentication_cbor: hex(unsigned),
+        request_signature_input: hex(input),
+        instance_id_text: f4.textForms.instance_id,
+        key_id_text: f4.textForms.key_id,
+        request_id_text: f4.textForms.request_id,
+      },
+      expected: {
+        authorization_header: header,
+        signature: hex(sig),
+      },
+      checks: {
+        signature_verifies: verify(opKey.priv, input, sig),
+      },
+    },
+    "federation-request/instance"
+  );
+
+  const negativeCases = [
+    section(
+      {
+        reason: "timestamp is outside the 300-second freshness window",
+        expected_error: "E_TIMESTAMP_OUT_OF_RANGE",
+        expected: { timestamp: ts - 600, freshness_window_seconds: 300 },
+      },
+      "federation-request/negative-stale-timestamp"
+    ),
+    section(
+      {
+        reason: "body hash does not match the actual request body",
+        expected_error: "E_SIGNATURE_INVALID",
+        expected: { body_hex_expected: hex(body), body_hash_computed_over_body: hex(bodyHash) },
+      },
+      "federation-request/negative-body-hash-mismatch"
+    ),
+    section(
+      {
+        reason: "the same request_id is reused within the replay window",
+        expected_error: "E_REPLAY",
+        expected: { authorization_header: header, replay_window_seconds: 300 },
+      },
+      "federation-request/negative-replay"
+    ),
+  ];
+
+  return { positive, negatives: negativeCases, header, clientHeader, clientUnsigned, accountId, instanceId, keyId };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 9 - streaming media encryption (spec/35)
+// ---------------------------------------------------------------------------
+
+function uint32be(n) {
+  const b = Buffer.alloc(4);
+  b.writeUInt32BE(n, 0);
+  return b;
+}
+
+// AesGcmHkdfStreaming encryption: header + segmented AES-256-GCM.
+function encryptStream(cek, salt, noncePrefix, aad, plaintext) {
+  const prk = hkdfExtract(salt, cek);
+  const derivedKey = hkdfExpand(prk, aad, 32);
+
+  const header = concat(Buffer.from([0x28]), salt, noncePrefix);
+  const segments = [];
+  const firstCap = 1048520; // S - header(40) - tag(16)
+  let offset = 0;
+  let index = 0;
+  while (offset < plaintext.length) {
+    const cap = index === 0 ? firstCap : 1048560;
+    const len = Math.min(cap, plaintext.length - offset);
+    const segment = plaintext.subarray(offset, offset + len);
+    const isFinal = offset + len === plaintext.length;
+    const nonce = concat(noncePrefix, uint32be(index), Buffer.from([isFinal ? 0x01 : 0x00]));
+    const c = crypto.createCipheriv("aes-256-gcm", derivedKey, nonce);
+    const ct = concat(c.update(segment), c.final(), c.getAuthTag());
+    segments.push({ index, nonce, ciphertext: ct, isFinal });
+    offset += len;
+    index += 1;
+  }
+  return { header, derivedKey, segments, blob: concat(header, ...segments.map((s) => s.ciphertext)) };
+}
+
+function fix9() {
+  const cek = seed("media-cek");
+  const salt = seed("media-salt");
+  const noncePrefix = seed("media-nonce-prefix").subarray(0, 7);
+  const objectId = seed("object-id");
+  const versionId = seed("media-version-id");
+
+  // ObjectSecurityMetadata (23.4) with object_type 3 and encryption_suite 1.
+  const metadata = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(Buffer.from(objectId))],
+    [2, encUint(3)],
+    [3, encUint(1)],
+    [4, encBytes(Buffer.from(versionId))],
+  ]);
+  const aad = concat("loopable-object-v1\x00", metadata);
+
+  // media_content (56.1) embedding a small file payload.
+  const payload = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, // PNG signature
+  ]);
+  const mediaContent = encMap([
+    [1, encText("image/png")],
+    [2, encText("sample.png")],
+    [3, encUint(payload.length)],
+    [4, encBytes(payload)],
+  ]);
+
+  const one = encryptStream(cek, salt, noncePrefix, aad, mediaContent);
+
+  // Two-segment stream: data chosen so the canonical plaintext crosses 1,048,520 bytes.
+  const bigData = Buffer.alloc(1048576); // 1 MiB, deterministic zeros
+  const bigMeta = encMap([
+    [1, encText("application/octet-stream")],
+    [3, encUint(bigData.length)],
+    [4, encBytes(bigData)],
+    [5, encMap([[0, encUint(1920)], [1, encUint(1080)]])],
+  ]);
+  const two = encryptStream(cek, salt, noncePrefix, aad, bigMeta);
+
+  // Negatives use the one-segment stream so each rejected blob stays small.
+  // The multi-segment layout itself is pinned by the positive vector above.
+
+  // Truncate before the complete final (and only) segment ends, cutting into
+  // its tag.
+  const truncated = one.blob.subarray(0, one.blob.length - 20);
+
+  // Flip a byte inside the segment ciphertext, breaking its GCM tag.
+  const tampered = Buffer.from(one.blob);
+  tampered[60] ^= 0x01;
+
+  // Re-encrypt the single segment marked non-final (final_byte 0x00); no
+  // segment carries the final mark, so the stream is never complete.
+  const wrongFinal = (() => {
+    const nonce = concat(noncePrefix, uint32be(0), Buffer.from([0x00]));
+    const c = crypto.createCipheriv("aes-256-gcm", one.derivedKey, nonce);
+    return concat(one.header, c.update(mediaContent), c.final(), c.getAuthTag());
+  })();
+
+  const positive = section(
+    {
+      inputs: {
+        content_encryption_key: hex(cek),
+        salt: hex(salt),
+        nonce_prefix: hex(noncePrefix),
+        object_id: hex(objectId),
+        object_type: 3,
+        encryption_suite: 1,
+        version_id: hex(versionId),
+      },
+      intermediates: {
+        object_security_metadata_cbor: hex(metadata),
+        aad: hex(aad),
+        derived_key: hex(two.derivedKey),
+      },
+      expected: {
+        header: hex(one.header),
+        one_segment_plaintext_cbor: hex(mediaContent),
+        one_segment_nonce: hex(one.segments[0].nonce),
+        one_segment_ciphertext: hex(one.blob),
+        two_segment_blob: hex(two.blob),
+        two_segment_segment_count: two.segments.length,
+        two_segment_nonces: two.segments.map((s) => hex(s.nonce)),
+      },
+      checks: {
+        header_is_40_bytes: one.header.length === 40,
+        first_segment_ciphertext_fits_capacity: two.segments[0].ciphertext.length === 1048536,
+        all_but_last_segments_full: two.segments
+          .slice(0, -1)
+          .every((s) => s.index === 0 || s.ciphertext.length === 1048576),
+        final_segment_marked: two.segments[two.segments.length - 1].isFinal === true,
+        one_segment_is_single: one.segments.length === 1,
+      },
+    },
+    "media-streaming/valid"
+  );
+
+  const negatives = [
+    section(
+      {
+        reason: "the stream is truncated before the complete final (and only) segment; the partial tag cannot authenticate",
+        expected_error: "E_DECRYPTION_FAILED",
+        expected: { truncated_blob: hex(truncated) },
+      },
+      "media-streaming/negative-truncated"
+    ),
+    section(
+      {
+        reason: "a byte inside the segment ciphertext was flipped, breaking its GCM tag",
+        expected_error: "E_DECRYPTION_FAILED",
+        expected: { tampered_blob: hex(tampered) },
+      },
+      "media-streaming/negative-tampered"
+    ),
+    section(
+      {
+        reason: "the single segment is marked non-final (final_byte 0x00); no segment carries the final mark, so the stream is never complete",
+        expected_error: "E_DECRYPTION_FAILED",
+        expected: { blob: hex(wrongFinal) },
+      },
+      "media-streaming/negative-wrong-final-flag"
+    ),
+  ];
+
+  return { positive, negatives };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 10 - username grammar (spec/11.6)
+// ---------------------------------------------------------------------------
+
+function fix10() {
+  const regex = /^(?=[a-z0-9_]*[a-z])[a-z0-9][a-z0-9_]{2,12}[a-z0-9]$/;
+  const cases = [
+    ["alice", true],
+    ["12cool", true],
+    ["vhe2929", true],
+    ["a1b2", true],
+    ["barn", true],
+    ["a1b2c3d4e5f6g7", true], // 14 chars
+    ["____", false],
+    ["3829847859678", false],
+    ["1234", false],
+    ["ab", false],
+    ["abcdefghijklmno", false],
+    ["a_b_", false], // ends with underscore
+    ["_ab", false], // starts with underscore
+    ["ab_cd", true],
+    ["AlIcE", false], // uppercase not canonical (must be normalized before validation)
+    ["a.b", false], // dot not in the alphabet
+    ["a b", false], // whitespace
+    ["aéb", false], // non-ASCII
+  ];
+
+  const vectors = [];
+  for (const [username, valid] of cases) {
+    vectors.push(
+      section(
+        {
+          username,
+          matches_grammar: valid,
+          expected_validation: valid ? "valid" : "invalid",
+          expected_error: valid ? null : "E_BAD_REQUEST",
+          reason: valid
+            ? null
+            : /[A-Z]/.test(username)
+              ? "case folding must happen before validation (11.6)"
+              : /^_|_$/.test(username)
+                ? "first or last character is not a letter or digit"
+                : /[^a-z0-9_]/.test(username)
+                  ? "contains characters outside [a-z0-9_]"
+                  : /^[0-9_]+$/.test(username)
+                    ? "contains no lowercase letter"
+                    : username.length < 4
+                      ? "too short"
+                      : "too long",
+        },
+        `username-grammar/${valid ? "valid" : "invalid"}-${username.replace(/[^a-zA-Z0-9]/g, (c) => {
+          const map = { ".": "dot", " ": "space", "_": "underscore" };
+          return map[c] || `u${c.codePointAt(0).toString(16)}`;
+        })}`
+      )
+    );
+  }
+  // The _name suffix uses the raw regex against the canonical lowercase form.
+  return { vectors };
+}
+
+// ---------------------------------------------------------------------------
+// Fix 11 - relationship event envelopes (spec/34.9, spec/50)
+// ---------------------------------------------------------------------------
+
+function fix11() {
+  const identityKey = ed25519FromSeed(seed("identity"));
+  const deviceA = ed25519FromSeed(seed("device-signing"));
+  const alphaEncryption = x25519FromSeed(seed("device-encryption"));
+  const alphaDeviceId = seed("device-id").subarray(0, 16);
+  const accountId = sha256("loopable-account-id\x00", identityKey.pub);
+  const instanceId = sha256("loopable-instance-id\x00", ed25519FromSeed(seed("instance-root")).pub);
+  const created = 1759632400;
+
+  const targetIdentity = ed25519FromSeed(seed("relationship-target"));
+  const targetDevice = x25519FromSeed(seed("relationship-target-device"));
+  const targetDeviceId = seed("relationship-target-device-id").subarray(0, 16);
+  const targetId = sha256("loopable-account-id\x00", targetIdentity.pub);
+
+  // Genesis authorizing deviceA at the AUTHORIZED level.
+  const firstDeviceA = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(accountId)],
+    [2, encBytes(alphaDeviceId)],
+    [3, encBytes(deviceA.pub)],
+    [4, encBytes(alphaEncryption.pub)],
+    [5, encUint(0)],
+  ]);
+  const firstDeviceSig = sign(identityKey.priv, concat("loopable-first-device-authorization-v1\x00", firstDeviceA));
+  const firstDeviceRecord = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(accountId)],
+    [2, encBytes(alphaDeviceId)],
+    [3, encBytes(deviceA.pub)],
+    [4, encBytes(alphaEncryption.pub)],
+    [5, encUint(0)],
+    [6, encBytes(firstDeviceSig)],
+  ]);
+  const e0Id = seed("event-id").subarray(0, 16);
+  const e0 = buildEvent({
+    eventId: e0Id,
+    eventType: 0,
+    accountId,
+    deviceId: Buffer.alloc(0),
+    createdAt: created,
+    predecessors: [],
+    objectRefs: [],
+    body: encMap([
+      [0, encBytes(identityKey.pub)],
+      [1, encText("alice")],
+      [2, encBytes(instanceId)],
+      [3, firstDeviceRecord],
+    ]),
+    signer: identityKey.priv,
+  });
+
+  // Encrypted relationship object (object type 5, 50.3) attached to the follow.
+  const relObjectId = seed("rel-object-id");
+  const relVersionId = seed("rel-version-id");
+  const relCek = seed("rel-object-cek");
+  const relNonce = seed("rel-nonce").subarray(0, 12);
+  const relContent = encMap([
+    [0, encArray([encText("close-friends")])],
+    [1, encText("met at the conference")],
+  ]);
+  const relMetadata = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(Buffer.from(relObjectId))],
+    [2, encUint(5)],
+    [3, encUint(0)],
+    [4, encBytes(Buffer.from(relVersionId))],
+  ]);
+  const relAad = concat("loopable-object-v1\x00", relMetadata);
+  const relCiphertext = aeadSeal(relCek, relNonce, relAad, relContent);
+
+  // Recipient: the follow target's device, per 50.3.
+  const recipientDescriptor = encMap([
+    [0, encUint(0)],
+    [1, encBytes(targetId)],
+    [2, encBytes(targetDeviceId)],
+    [3, encBytes(targetDevice.pub)],
+  ]);
+  const recipientKeyId = sha256("loopable-recipient-key-id-v1\x00", recipientDescriptor).subarray(0, 16);
+  const relInfo = concat("loopable-hpke-object-key-v1\x00", relObjectId, recipientKeyId, Buffer.from("0.1", "utf8"));
+  const relSeal = sealBase(targetDevice.pub, relInfo, Buffer.alloc(0), relCek, x25519FromSeed(seed("rel-ephemeral")));
+
+  const recipientRecord = encMap([
+    [0, encUint(0)],
+    [1, encBytes(targetId)],
+    [2, encBytes(targetDeviceId)],
+    [3, encBytes(recipientKeyId)],
+    [4, encBytes(relSeal.enc)],
+    [5, encBytes(relSeal.ct)],
+  ]);
+  const relEnvelope = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(Buffer.from(relObjectId))],
+    [2, encUint(5)],
+    [3, encUint(0)],
+    [4, encBytes(Buffer.from(relVersionId))],
+    [5, encBytes(relNonce)],
+    [6, encBytes(relCiphertext)],
+    [7, encArray([recipientRecord])],
+  ]);
+  const relEnvelopeId = sha256("loopable-object-envelope-v1\x00", relEnvelope);
+
+  const relRef = encMap([
+    [0, encBytes(Buffer.from(relObjectId))],
+    [1, encBytes(Buffer.from(relVersionId))],
+  ]);
+
+  const e1Id = seed("event-follow").subarray(0, 16);
+  const e1 = buildEvent({
+    eventId: e1Id,
+    eventType: 6,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759634100,
+    predecessors: [e0Id],
+    objectRefs: [relRef],
+    body: encMap([[0, encBytes(targetId)]]),
+    signer: deviceA.priv,
+  });
+
+  const e2Id = seed("event-unfollow").subarray(0, 16);
+  const e2 = buildEvent({
+    eventId: e2Id,
+    eventType: 7,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759634200,
+    predecessors: [e0Id, e1Id],
+    objectRefs: [],
+    body: encMap([[0, encBytes(targetId)]]),
+    signer: deviceA.priv,
+  });
+
+  const e3Id = seed("event-block").subarray(0, 16);
+  const e3 = buildEvent({
+    eventId: e3Id,
+    eventType: 8,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759634300,
+    predecessors: [e0Id, e1Id, e2Id],
+    objectRefs: [],
+    body: encMap([[0, encBytes(targetId)]]),
+    signer: deviceA.priv,
+  });
+
+  const e4Id = seed("event-unblock").subarray(0, 16);
+  const e4 = buildEvent({
+    eventId: e4Id,
+    eventType: 9,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759634400,
+    predecessors: [e0Id, e1Id, e2Id, e3Id],
+    objectRefs: [],
+    body: encMap([[0, encBytes(targetId)]]),
+    signer: deviceA.priv,
+  });
+
+  // Negative: a relationship event targeting the subject's own account.
+  const e5Id = seed("event-self-follow").subarray(0, 16);
+  const e5 = buildEvent({
+    eventId: e5Id,
+    eventType: 6,
+    accountId,
+    deviceId: alphaDeviceId,
+    createdAt: 1759634500,
+    predecessors: [e0Id, e1Id, e2Id, e3Id, e4Id],
+    objectRefs: [],
+    body: encMap([[0, encBytes(accountId)]]),
+    signer: deviceA.priv,
+  });
+
+  const positive = section(
+    {
+      inputs: {
+        subject_account_id: hex(accountId),
+        subject_device_id: hex(alphaDeviceId),
+        target_account_id: hex(targetId),
+        target_identity_public_key: hex(targetIdentity.pub),
+        target_device_public_key: hex(targetDevice.pub),
+        relationship_object_id: hex(relObjectId),
+        relationship_version_id: hex(relVersionId),
+      },
+      intermediates: {
+        relationship_object_aad: hex(relAad),
+        relationship_recipient_key_id: hex(recipientKeyId),
+        relationship_hpke_info: hex(relInfo),
+      },
+      expected: {
+        genesis_event_envelope_cbor: hex(e0.envelope),
+        follow_created_envelope_cbor: hex(e1.envelope),
+        follow_created_signature: hex(e1.signature),
+        follow_removed_envelope_cbor: hex(e2.envelope),
+        follow_removed_signature: hex(e2.signature),
+        block_created_envelope_cbor: hex(e3.envelope),
+        block_created_signature: hex(e3.signature),
+        block_removed_envelope_cbor: hex(e4.envelope),
+        block_removed_signature: hex(e4.signature),
+        relationship_object_plaintext_cbor: hex(relContent),
+        relationship_object_ciphertext: hex(relCiphertext),
+        relationship_object_envelope_cbor: hex(relEnvelope),
+        relationship_object_envelope_id: hex(relEnvelopeId),
+      },
+      checks: {
+        follow_signature_verifies: verify(deviceA.priv, e1.signatureInput, e1.signature),
+        unfollow_signature_verifies: verify(deviceA.priv, e2.signatureInput, e2.signature),
+        block_signature_verifies: verify(deviceA.priv, e3.signatureInput, e3.signature),
+        unblock_signature_verifies: verify(deviceA.priv, e4.signatureInput, e4.signature),
+        relationship_object_decrypts: hex(aeadOpen(relCek, relNonce, relAad, relCiphertext)) === hex(relContent),
+        wrapped_cek_recovers:
+          hex(openBase(targetDevice.pub, targetDevice.priv, relInfo, Buffer.alloc(0), relSeal.enc, relSeal.ct)) ===
+          hex(relCek),
+        subject_differs_from_target: hex(accountId) !== hex(targetId),
+      },
+    },
+    "relationship-events/valid-follow-block-cycle"
+  );
+
+  const negatives = [
+    section(
+      {
+        reason: "a relationship event targets the account's own account_id; an account cannot follow or block itself (34.9)",
+        expected_error: "E_BAD_REQUEST",
+        expected: {
+          event_envelope_cbor: hex(e5.envelope),
+          event_signature: hex(e5.signature),
+          signature_still_cryptographically_valid: verify(deviceA.priv, e5.signatureInput, e5.signature),
+        },
+      },
+      "relationship-events/negative-self-target"
+    ),
+  ];
+
+  return { positive, negatives };
+}
+
+// ---------------------------------------------------------------------------
 // RFC 9180 A.1 / A.3 self-test
 // ---------------------------------------------------------------------------
 
@@ -812,6 +1911,14 @@ function hpkeSelfTest() {
 const f1 = fix1();
 const f2 = fix2();
 const f3 = fix3(f2);
+const f4 = fix4(f2);
+const f5 = fix5();
+const f6 = fix6();
+const f7 = fix7();
+const f8 = fix8(f4);
+const f9 = fix9();
+const f10 = fix10();
+const f11 = fix11();
 
 const selfTest = hpkeSelfTest();
 if (
@@ -828,6 +1935,14 @@ if (
 writeFileSync(join(here, "first-device-authorization.json"), JSON.stringify({ vectors: [f1.positive, ...f1.negatives] }, null, 2) + "\n");
 writeFileSync(join(here, "hpke-object-key.json"), JSON.stringify({ vectors: [f2.positive, ...f2.negatives] }, null, 2) + "\n");
 writeFileSync(join(here, "object-encryption-aad.json"), JSON.stringify({ vectors: [f3.positive, ...f3.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "identifiers.json"), JSON.stringify({ vectors: [f4.positive, ...f4.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "canonical-cbor.json"), JSON.stringify({ vectors: [...f5.positives, ...f5.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "event-signature.json"), JSON.stringify({ vectors: [f6.positive, ...f6.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "device-authorization.json"), JSON.stringify({ vectors: [f7.positive, ...f7.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "federation-request.json"), JSON.stringify({ vectors: [f8.positive, ...f8.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "media-streaming.json"), JSON.stringify({ vectors: [f9.positive, ...f9.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "username-grammar.json"), JSON.stringify({ vectors: f10.vectors }, null, 2) + "\n");
+writeFileSync(join(here, "relationship-events.json"), JSON.stringify({ vectors: [f11.positive, ...f11.negatives] }, null, 2) + "\n");
 
 console.log("HPKE RFC 9180 A.1 self-test:", JSON.stringify(selfTest, null, 2));
-console.log("Wrote first-device-authorization.json, hpke-object-key.json, object-encryption-aad.json");
+console.log("Wrote first-device-authorization.json, hpke-object-key.json, object-encryption-aad.json, identifiers.json, canonical-cbor.json, event-signature.json, device-authorization.json, federation-request.json, media-streaming.json, username-grammar.json, relationship-events.json");

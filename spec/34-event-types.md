@@ -27,8 +27,6 @@ The trusted device resolution rules are defined in `42-identity-and-authorizatio
 | 7 | `FOLLOW_REMOVED` | AUTHORIZED | Stop following an account. |
 | 8 | `BLOCK_CREATED` | AUTHORIZED | Block an account. |
 | 9 | `BLOCK_REMOVED` | AUTHORIZED | Unblock an account. |
-| 10 | `MUTE_CREATED` | AUTHORIZED | Mute an account. |
-| 11 | `MUTE_REMOVED` | AUTHORIZED | Unmute an account. |
 | 12 | `PROFILE_UPDATED` | AUTHORIZED | Publish a new profile version. |
 | 13 | `POST_CREATED` | AUTHORIZED | Publish a new post version. |
 | 14 | `POST_EDITED` | AUTHORIZED | Publish a new post version replacing one. |
@@ -42,8 +40,9 @@ The trusted device resolution rules are defined in `42-identity-and-authorizatio
 | 22 | `GROUP_LEFT` | MEMBER | Leave a group as the leaving subject. |
 | 23 | `GROUP_UPDATED` | MEMBER | Advance MLS epoch or update group state. |
 | 24 | `MESSAGE_CREATED` | AUTHORIZED | Publish a direct message object. |
+| 25 | `PROFILE_VISIBILITY_SET` | AUTHORIZED | Set whether the account publishes a public profile. |
 
-All registry entries above are mandatory event types for version 0.1. Unknown mandatory event types MUST NOT be applied, per `82-limits-and-validation.md`.
+All registry entries above are mandatory event types for version 0.1. Unknown mandatory event types MUST NOT be applied, per `82-limits-and-validation.md`. Codes `10` and `11` were previously assigned to `MUTE_CREATED` and `MUTE_REMOVED`; social-graph mutes were removed (`50-social-relationships.md`), so the codes are retired and MUST NOT be emitted or applied.
 
 ## 34.3 ACCOUNT_CREATED (0)
 
@@ -159,23 +158,23 @@ Body:
 | --- | ----- | ---- | -------- | ----------- |
 | 0 | `reason` | uint | no | Optional reason code. |
 
-## 34.9 Relationship events (6 to 11)
+## 34.9 Relationship events (6 to 9)
 
 Auth: `AUTHORIZED`. The subject of the action is always the event's own `account_id`; the target is `target_account_id`.
 
-Body for `FOLLOW_CREATED` (6), `FOLLOW_REMOVED` (7), `BLOCK_CREATED` (8), `BLOCK_REMOVED` (9), `MUTE_CREATED` (10), `MUTE_REMOVED` (11):
+Body for `FOLLOW_CREATED` (6), `FOLLOW_REMOVED` (7), `BLOCK_CREATED` (8), `BLOCK_REMOVED` (9):
 
 | Key | Field | Type | Required | Description |
 | --- | ----- | ---- | -------- | ----------- |
 | 0 | `target_account_id` | bytes(32) | yes | The account the relationship applies to. |
 
-A relationship event MUST NOT target the account's own `account_id`. Semantics are defined in `50-social-relationships.md`.
+A relationship event MUST NOT target the account's own `account_id` (an account cannot follow or block itself). Semantics are defined in `50-social-relationships.md`. A block is asymmetric (`50.5`) and does not inform the target.
 
 ## 34.10 Content events (12 to 16, 24)
 
 Auth: `AUTHORIZED`.
 
-* `PROFILE_UPDATED` (12): `object_references` contains exactly one reference to a profile object version. Body is empty.
+* `PROFILE_UPDATED` (12): `object_references` contains exactly one reference to a profile object version. When the account is public (`34.13`) the body MAY carry the public profile card of `51.5`; otherwise the body MUST be empty.
 * `POST_CREATED` (13): `object_references` contains exactly one reference (object + version) to a post object. Body is empty.
 * `POST_EDITED` (14): `object_references` contains exactly one reference to the new post version. Body:
 
@@ -271,7 +270,19 @@ Reason code values for `DEVICE_REVOKED` and `ACCOUNT_DELETED`:
 
 Unknown reason codes MUST be treated as `0`.
 
-## 34.13 Validation summary
+## 34.13 PROFILE_VISIBILITY_SET (25)
+
+Auth: `AUTHORIZED`.
+
+Sets the account's public-profile election. The account is `public` exactly when the latest `PROFILE_VISIBILITY_SET` event in its authoritative event state (`42.2`) carries `profile_is_public = true`. Absence of the event, or a latest value of `false`, means the profile is private (`51.5`).
+
+| Key | Field | Type | Required | Description |
+| --- | ----- | ---- | -------- | ----------- |
+| 0 | `profile_is_public` | bool | yes | Whether the account publishes a public profile per `51.5`. |
+
+The event changes account state only; it does not create a profile version. Publishing, updating, or withdrawing a public profile MUST each be a new event.
+
+## 34.14 Validation summary
 
 Every event is validated per `22.5`. The additional per-type validation is:
 

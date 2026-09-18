@@ -1,5 +1,10 @@
 ; accounts.cddl - account lookup response (spec/60-federation.md section 60.8)
 
+; The endpoint returns either the full response or, when the requester has
+; blocked the target account (spec 50.5), a response containing only the
+; blocked marker.
+account_lookup_result = account_lookup_response / account_lookup_blocked
+
 account_lookup_response = {
   0 => account_id,              ; account_id
   1 => ed25519_public_key,      ; identity_public_key
@@ -7,8 +12,23 @@ account_lookup_response = {
   3 => instance_id,             ; home_instance
   4 => [* device_summary],      ; device_summary (max 16 entries, spec 82.1)
   5 => account_state,           ; state
+  6 => bool,                    ; profile_is_public (spec 51.5)
+  ? 7 => public_profile_card,   ; present when profile_is_public is true
+  ? 8 => bool,                  ; blocked (true when requester blocked target)
+  ? 9 => [* text],              ; roles: local staff roles (spec 13.10)
+}
+
+account_lookup_blocked = {
+  8 => bool,                    ; blocked (always true)
 }
 
 account_state = 0..1            ; 0 active, 1 deleted
+
+; Public profile card (spec/51-profiles.md section 51.5)
+public_profile_card = {
+  ? 0 => text,                  ; display_name
+  ? 1 => text,                  ; bio
+  ? 2 => text,                  ; pronouns
+}
 
 ; device_summary is defined in devices.cddl.

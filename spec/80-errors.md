@@ -33,6 +33,8 @@ HTTP status codes map as shown in the registry. Clients MUST use `error_code`, n
 | `E_UNAUTHORIZED_DEVICE` | 403 | no | Signing device not authorized for the operation (`42.4`). |
 | `E_FIRST_DEVICE_INVALID` | 422 | no | First-device authorization missing, malformed, or inconsistent with the account identity or device binding (`34.3`). |
 | `E_MEMBER_REQUIRED` | 403 | no | Requester is not a member (`13.6`). |
+| `E_BANNED` | 403 | no | Account is banned from the instance (`13.10.3`). |
+| `E_SUSPENDED` | 403 | no | Account is suspended from the instance (`13.10.3`). |
 | `E_OBJECT_NOT_AUTHORIZED` | 403 | no | Requester not permitted to receive the served object. |
 | `E_NOT_FOUND` | 404 | no | Event, object, or account not found or not served. |
 | `E_USERNAME_UNAVAILABLE` | 409 | no | Username not available (`40.2`). |

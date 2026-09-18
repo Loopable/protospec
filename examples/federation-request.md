@@ -80,8 +80,11 @@ body = deterministic_cbor( {
    2: "alice@b.social",
    3: INS_b,
    4: [ {0: dv_alpha, 1: true, 2: 0} ],
-   5: 0
+   5: 0,
+   6: false
 } )
 ```
+
+Alice's account has not elected a public profile (`spec/51-profiles.md` 51.5), so `profile_is_public` is false and no `public_profile` card is present.
 
 Responses are not signature-required unless they mutate state; state-changing responses are delivered as events instead (`spec/61-federation-authentication.md` 61.8).

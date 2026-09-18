@@ -6,6 +6,8 @@ This module defines the boundaries of search.
 
 Search is contextual. A client MUST NOT perform unrestricted global account search. A global user directory does not exist in the protocol (`91-privacy.md`, `13.7`).
 
+A public profile (`51.5`) enables an individual direct lookup by account identifier or handle, not a search listing. Public accounts MUST NOT be indexed for global search, and their public status does not permit enumeration (`13.7`).
+
 Search MAY operate over:
 
 * the user's current instance;

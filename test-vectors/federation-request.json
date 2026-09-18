@@ -1,0 +1,60 @@
+{
+  "vectors": [
+    {
+      "inputs": {
+        "instance_id_wire": "a23d8749337cb2b0871379fd1f31b03fbb138f71b89b4453adb2f5f6e4817a04",
+        "key_id_wire": "072621c8576de1545fe04ee360436158",
+        "request_id_wire": "5a5155b56ba08bef20b4a75262f0bd48",
+        "method": "POST",
+        "host": "example.org",
+        "path": "/v1/objects",
+        "query": "?limit=10&offset=0",
+        "timestamp": 1759634000,
+        "body_hex": "80",
+        "body_hash": "76be8b528d0075f7aae98d6fa57a6d3c83ae480a8469e668d7b0af968995ac71"
+      },
+      "intermediates": {
+        "request_authentication_cbor": "a70064504f5354016b6578616d706c652e6f7267026b2f76312f6f626a6563747303723f6c696d69743d3130266f66667365743d3004505a5155b56ba08bef20b4a75262f0bd48051a68e1e25006582076be8b528d0075f7aae98d6fa57a6d3c83ae480a8469e668d7b0af968995ac71",
+        "request_signature_input": "6c6f6f7061626c652d66656465726174696f6e2d726571756573742d763100a70064504f5354016b6578616d706c652e6f7267026b2f76312f6f626a6563747303723f6c696d69743d3130266f66667365743d3004505a5155b56ba08bef20b4a75262f0bd48051a68e1e25006582076be8b528d0075f7aae98d6fa57a6d3c83ae480a8469e668d7b0af968995ac71",
+        "instance_id_text": "ui6yosjtpszlbbytph6r6mnqh65rhd3rxcnuiu5nwl27nzebpica",
+        "key_id_text": "a4tcdscxnxqvix7aj3rwaq3bla",
+        "request_id_text": "ljivlnllucf66ifuu5jgf4f5ja"
+      },
+      "expected": {
+        "authorization_header": "Loopable v=1;instance=ui6yosjtpszlbbytph6r6mnqh65rhd3rxcnuiu5nwl27nzebpica;key=a4tcdscxnxqvix7aj3rwaq3bla;request=ljivlnllucf66ifuu5jgf4f5ja;ts=1759634000;sig=TdSwBnPT7Y6aUFmn2-heJzd-LhGQcMyVIaByUb5oohJjH-Xva1PiA1UTadBzx0u-5npksKR_NDLHusbKTErhDw",
+        "signature": "4dd4b00673d3ed8e9a5059a7dbe85e27377e2e119070cc9521a07251be68a212631fe5ef6b53e203551369d073c74bbee67a64b0a47f3432c7bac6ca4c4ae10f"
+      },
+      "checks": {
+        "signature_verifies": true
+      },
+      "_name": "federation-request/instance"
+    },
+    {
+      "reason": "timestamp is outside the 300-second freshness window",
+      "expected_error": "E_TIMESTAMP_OUT_OF_RANGE",
+      "expected": {
+        "timestamp": 1759633400,
+        "freshness_window_seconds": 300
+      },
+      "_name": "federation-request/negative-stale-timestamp"
+    },
+    {
+      "reason": "body hash does not match the actual request body",
+      "expected_error": "E_SIGNATURE_INVALID",
+      "expected": {
+        "body_hex_expected": "80",
+        "body_hash_computed_over_body": "76be8b528d0075f7aae98d6fa57a6d3c83ae480a8469e668d7b0af968995ac71"
+      },
+      "_name": "federation-request/negative-body-hash-mismatch"
+    },
+    {
+      "reason": "the same request_id is reused within the replay window",
+      "expected_error": "E_REPLAY",
+      "expected": {
+        "authorization_header": "Loopable v=1;instance=ui6yosjtpszlbbytph6r6mnqh65rhd3rxcnuiu5nwl27nzebpica;key=a4tcdscxnxqvix7aj3rwaq3bla;request=ljivlnllucf66ifuu5jgf4f5ja;ts=1759634000;sig=TdSwBnPT7Y6aUFmn2-heJzd-LhGQcMyVIaByUb5oohJjH-Xva1PiA1UTadBzx0u-5npksKR_NDLHusbKTErhDw",
+        "replay_window_seconds": 300
+      },
+      "_name": "federation-request/negative-replay"
+    }
+  ]
+}

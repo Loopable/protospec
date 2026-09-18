@@ -9,7 +9,7 @@ Federation carries signed events, but instance-to-instance HTTP requests need an
 
 ## Alternatives
 
-1. Rely on mutual TLS alone. Rejected: no path for other instances to validate a request's provenance cryptographically, and the draft retains HTTP JSON endpoints.
+1. Rely on mutual TLS alone. Rejected: no path for other instances to validate a request's provenance cryptographically, and HTTP JSON endpoints remain.
 2. Bearer tokens exchanged out of band. Rejected: adds a key-distribution protocol with no wire form here.
 3. An HTTP signature scheme over a domain-separated reconstruction of the request. Chosen.
 

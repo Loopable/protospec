@@ -5,7 +5,7 @@
 
 ## Context
 
-The draft's flexible wire format leaves serialization to implementations, which breaks signature verification across implementations.
+A flexible wire format that leaves serialization to implementations breaks signature verification across implementations.
 
 ## Alternatives
 

@@ -15,10 +15,10 @@ An encrypted object is a CBOR map:
 | 0 | `protocol_version` | text | yes | Protocol version `"0.1"`. |
 | 1 | `object_id` | bytes(32) | yes | Random object identifier, per `10.4`. |
 | 2 | `object_type` | uint | yes | Object type code from `33.7`. |
-| 3 | `encryption_suite` | uint | yes | `0` for the mandatory AES-256-GCM suite. |
+| 3 | `encryption_suite` | uint | yes | `0` for the mandatory AES-256-GCM suite; `1` for streaming media encryption (`35-media-encryption.md`). |
 | 4 | `version_id` | bytes(32) | yes | Version of the logical object, per `55-content.md`. |
-| 5 | `nonce` | bytes(12) | yes | AES-GCM nonce, per `23.6`. |
-| 6 | `ciphertext` | bytes | yes | `ciphertext || tag`, per `23.3`. |
+| 5 | `nonce` | bytes | yes | `12` bytes for suite `0` (AES-GCM nonce, per `23.6`); empty for suite `1` (the stream header carries its own salt and nonce prefix, per `35.3`). |
+| 6 | `ciphertext` | bytes | yes | `ciphertext || tag` for suite `0`, per `23.3`; the full stream blob for suite `1`, per `35.3`. |
 | 7 | `recipients` | array&lt;recipient_key_record&gt; | yes | Recipient key records, per `24.6`. |
 | 8 | `metadata` | map | no | Unauthenticated protocol metadata, per `33.6`. |
 
@@ -28,9 +28,9 @@ There is no envelope-level key identifier. Each recipient record carries its own
 
 * `object_id` is random and independent of plaintext, per `10.4`. Object IDs MUST NOT be hashes of plaintext and MUST NOT expose plaintext content.
 * `object_type` selects how the plaintext is parsed, per `33.7` and `55-content.md`.
-* `encryption_suite` is `0` for the mandatory AES-256-GCM suite. The meaning of an encryption-suite identifier MUST never change, per `81-versioning-and-capabilities.md`.
+* `encryption_suite` is `0` for the mandatory AES-256-GCM suite and `1` for streaming media encryption (`35-media-encryption.md`). The suite of an envelope MUST match the object type: media objects (`object_type` `3`) use suite `1`; all other object types use suite `0`. The meaning of an encryption-suite identifier MUST never change, per `81-versioning-and-capabilities.md`.
 * `version_id` identifies the specific version of the logical object, per `55-content.md`. In protocol version 0.1 every object has a version identity, so the field MUST be present. It MUST be authenticated by the associated data, per `23.4`.
-* `nonce` and `ciphertext` are produced per `23.3`.
+* `nonce` and `ciphertext` are produced per `23.3` for suite `0` and per `35-media-encryption.md` for suite `1`.
 * `recipients` carries the key material for authorized recipients, per `24.6` and `25.6`.
 
 ### envelope_id

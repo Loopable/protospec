@@ -62,7 +62,7 @@ A pending event MUST NOT be applied, and its objects MUST NOT be presented to us
 
 ## 63.5 Duplicates and replay
 
-The event ID is used for deduplication. Receiving the same event again MUST NOT cause a second state transition, per `62.6` and `39` of the foundational draft. An event whose ID collides with a previously accepted event but whose bytes differ MUST be rejected as a protocol integrity error (`E_EVENT_ID_COLLISION`), per `10.8`.
+The event ID is used for deduplication. Receiving the same event again MUST NOT cause a second state transition, per `62.6`. An event whose ID collides with a previously accepted event but whose bytes differ MUST be rejected as a protocol integrity error (`E_EVENT_ID_COLLISION`), per `10.8`.
 
 ## 63.6 DAG and ordering
 

@@ -5,10 +5,10 @@ object = {
   0 => protocol_version,        ; protocol_version
   1 => object_id,               ; object_id
   2 => object_type,             ; object_type
-  3 => encryption_suite,        ; encryption_suite (0 for AES-256-GCM)
+  3 => encryption_suite,        ; encryption_suite (0 for AES-256-GCM, 1 for streaming AEAD)
   4 => version_id,              ; version_id (required in v0.1, authenticated via AAD)
-  5 => aes_gcm_nonce,           ; nonce
-  6 => aes_ciphertext_with_tag, ; ciphertext || tag
+  5 => object_nonce,            ; nonce (12 bytes for suite 0, empty for suite 1)
+  6 => ciphertext_payload,      ; ciphertext || tag (suite 0) or stream blob (suite 1)
   7 => [* recipient_key_record],; recipients
   ? 8 => {* uint => any},       ; metadata (optional, unauthenticated, spec 33.6)
 }
@@ -24,8 +24,13 @@ object = {
 ; Object type codes (spec/33-object-envelope.md section 33.7)
 object_type = 0..9
 
-; Encryption suite codes (spec/33-object-envelope.md)
-encryption_suite = 0
+; Encryption suite codes (spec/33-object-envelope.md, spec/35-media-encryption.md)
+encryption_suite = 0..1
+
+; ciphertext_payload (spec/33-object-envelope.md section 33.2, spec/35):
+;   suite 0: aes_ciphertext_with_tag  ciphertext || tag (spec 23.3)
+;   suite 1: streaming_ciphertext     Header || formatted segments (spec 35.3)
+ciphertext_payload = aes_ciphertext_with_tag / streaming_ciphertext
 
 ; recipient_key_record (spec/24-hpke.md section 24.6)
 recipient_key_record = {

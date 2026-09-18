@@ -55,7 +55,7 @@ Attainable by the attacker without user-device compromise: reading encrypted obj
 
 ## 92.5 Not-protected
 
-The protocol does not protect against: a compromised user device (`98` of the foundational draft); an instance operator who is also the user's only host refusing service; metadata collection by the infrastructure (`91.2`); or cryptographically strong coercion of the endpoint that holds keys.
+The protocol does not protect against: a compromised user device; an instance operator who is also the user's only host refusing service; metadata collection by the infrastructure (`91.2`); or cryptographically strong coercion of the endpoint that holds keys.
 
 ## 92.6 Forward secrecy and post-compromise security
 

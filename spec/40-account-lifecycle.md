@@ -50,6 +50,17 @@ Semantics:
 3. Instances SHOULD delete local encrypted objects according to their retention policy.
 4. Because replicas may exist, Loopable MUST NOT claim that an `ACCOUNT_DELETED` event physically erases every copy of every historical object. Physical deletion and semantic deletion are separate, per `65-object-storage.md`.
 
+On an authoritative `ACCOUNT_DELETED` event, the following effects apply:
+
+| Artifact | Semantic effect | Physical effect |
+| -------- | --------------- | --------------- |
+| Historical events | Cryptographic validity unchanged; must not be applied to new state | Unchanged; replicas may retain them |
+| Encrypted objects owned by the account | Treat as deleted per retention policy (`65.7`) | Local store SHOULD delete; replicas and caches may retain ciphertext |
+| Recipient records and keys | No new recipients; existing recipients keep access only while they retain keys | Clients SHOULD delete keys per `65.6` |
+| Username | Released to reservation per `40.3` | Instance removes reservation after the interval |
+| Account lookup (`60.8`) | Returns `state` `1` (deleted) | - |
+| Account identity key | MUST NOT be reused; the account does not reappear | - |
+
 There is no account "restore" defined by the protocol. A deleted account's identity key MUST NOT be reused; recreation is a new account.
 
 ## 40.5 Account relocation

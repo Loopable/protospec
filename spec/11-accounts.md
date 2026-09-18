@@ -57,15 +57,18 @@ A username is the local, mutable, human-readable name of an account.
 The canonical username MUST match:
 
 ```text
-^[a-z0-9]([a-z0-9_]{0,30}[a-z0-9])?$
+^(?=[a-z0-9_]*[a-z])[a-z0-9][a-z0-9_]{2,12}[a-z0-9]$
 ```
 
-with the additional rule that a single-character username is a single `[a-z0-9]` character. In words:
+In words:
 
-1. The username is 1 to 32 characters.
+1. The username is 4 to 14 characters.
 2. Characters are lowercase ASCII letters `a` to `z`, digits `0` to `9`, and the underscore `_`.
-3. The first and last character MUST be a lowercase letter or digit.
-4. Underscores are allowed only between other characters.
+3. The username MUST contain at least one lowercase letter, so a username that is exclusively symbols or exclusively digits is invalid.
+4. The first and last character MUST be a lowercase letter or digit.
+5. Underscores are allowed only between other characters.
+
+Valid examples: `12cool`, `vhe2929`, `alice`, `a1b2`. Invalid examples: `____` (exclusively symbols), `3829847859678` (exclusively digits), `1234` (exclusively digits), `ab` (too short), `abcdefghijklmno` (too long, 15 characters).
 
 An account MAY register any username that matches the grammar and is available on its instance. Username availability and reservation are instance membership state, defined in `40-account-lifecycle.md`.
 
@@ -81,7 +84,7 @@ The reserved username list is empty for version 0.1. Username availability is in
 
 ## 11.7 Accounts and privacy
 
-An account is not automatically discoverable by people outside the instances and contexts it participates in. Account lookup, profile visibility, and enumeration limits are defined in `13-instances.md`, `51-profiles.md`, and `71-search.md`. There is no global public user directory in the protocol, per `91-privacy.md`.
+An account is not automatically discoverable by people outside the instances and contexts it participates in. Account lookup, profile visibility, and enumeration limits are defined in `13-instances.md`, `51-profiles.md`, and `71-search.md`. There is no global public user directory in the protocol, per `91-privacy.md`. An account that elects a public profile (`51.5`) is individually lookupable by anyone; that is an explicit user election and does not create a directory.
 
 ## 11.8 Account attributes
 
@@ -94,5 +97,7 @@ An account has the following protocol-relevant state:
 * Trusted device, per `12-devices.md`.
 * Authorization state, per `42-identity-and-authorization.md`.
 * Lifecycle state (active, deleted), per `40-account-lifecycle.md`.
+* Profile-visibility state (private by default), per `51.5`.
+* Public profile card, served through account lookup (`13.6`) while the account is public.
 
 None of this state is stored in plaintext except where required for protocol operation (routing, membership state per `13.5`).

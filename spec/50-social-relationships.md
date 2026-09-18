@@ -1,6 +1,6 @@
 # 50. Social relationships
 
-This module defines the authoritative semantics of following, blocking, and muting.
+This module defines the authoritative semantics of following and blocking.
 
 ## 50.1 Relationship events
 
@@ -12,10 +12,8 @@ Relationships are represented by immutable signed events:
 | `FOLLOW_REMOVED` | Stop following the target account. |
 | `BLOCK_CREATED` | Block the target account. |
 | `BLOCK_REMOVED` | Unblock the target account. |
-| `MUTE_CREATED` | Mute the target account. |
-| `MUTE_REMOVED` | Unmute the target account. |
 
-All relationship events are signed by an authorized device of the subject account, per `34.9`.
+All relationship events are signed by an authorized device of the subject account, per `34.9`. There is no social-graph mute event: muting is a client-side preference outside the base protocol, and a separate instance-level moderation mute is defined in `13.10.3`.
 
 ## 50.2 Following
 
@@ -50,14 +48,16 @@ An instance MUST NOT serve a follower/following list to a viewer that fails this
 
 ## 50.5 Blocks
 
-A block is a unilateral relationship. A user MAY block another user without approval. A block MUST NOT require plaintext disclosure of unrelated social data.
+A block is a unilateral relationship. A user MAY block another user without approval. An account MUST NOT block itself. A block MUST NOT require plaintext disclosure of unrelated social data.
 
-Effects the protocol specifies: implementations MUST NOT deliver the blocker's objects, notifications, or relationship-derived activity to the blocked account, and MUST NOT deliver the blocked account's activity to the blocker, per local policy where federation requires it. Additional instance-level blocking at the infrastructure layer is distinct and allowed, per `65-object-storage.md` and `91-privacy.md`. Protocol-level blocking and instance-level federation blocking are separate concepts.
+A block is asymmetric. It affects only the blocker:
 
-## 50.6 Mutes
+* The blocker MUST NOT receive the blocked account's objects, notifications, or relationship-derived activity, per `72-notifications.md`.
+* A lookup of the blocked account by the blocker MUST NOT return the account's profile or public card: the instance returns only the `blocked` marker (`60.8`, `13.6`).
+* The blocked account is unaffected. It continues to receive the blocker's content and may look the blocker up normally. The block is visible only to the blocker.
 
-A mute is a client-side preference applied to the muting user's stream. Mutes MUST NOT change object audiences, must not be visible to the target, and MUST NOT be served as a graph relationship to other users. Muting affects the muting client's display and notifications only, per `72-notifications.md`.
+The block does not change object audiences or recipient records (`33-object-envelope.md`). Unblocking (`BLOCK_REMOVED`) restores normal visibility. A moderator banning an account from an instance is a separate infrastructure-level action, per `13.10.3` and `91-privacy.md`.
 
-## 50.7 Relationship state
+## 50.6 Relationship state
 
-A relationship between account `S` (subject) and account `T` (target) has the state: `none`, `following`, `blocking`, `muting`, or combinations such as `following_and_muting`, `blocking_and_muting`. `BLOCK_CREATED` implies any follow of `T` by `S` stops and the combined state is `blocking`. `BLOCK_REMOVED` returns the relationship to `none` (a follow does not automatically resume). Clients MUST NOT infer any entitlement from follower status beyond what the audience and visibility rules allow.
+A relationship between account `S` (subject) and account `T` (target) has the state: `none`, `following`, or `blocking`. A block and a follow of the same account are mutually exclusive: `BLOCK_CREATED` stops any follow of `T` by `S` and sets the state to `blocking`; `BLOCK_REMOVED` returns the state to `none` (a follow does not automatically resume). Clients MUST NOT infer any entitlement from follower status beyond what the audience and visibility rules allow.

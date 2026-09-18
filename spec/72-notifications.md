@@ -12,7 +12,7 @@ A notification is an encrypted object of object type `8` (`notification`). Conte
 
 | Key | Field | Type | Required | Description |
 | --- | ----- | ---- | -------- | ----------- |
-| 0 | `kind` | uint | yes | `0` reply, `1` mention, `2` follow, `3` direct_message, `4` group_removal, `5` other. |
+| 0 | `kind` | uint | yes | `0` reply, `1` mention, `2` follow, `3` direct_message, `4` group_removal, `5` other, `6` device_join_request. |
 | 1 | `actor_account_id` | bytes(32) | yes | The account that triggered the notification. |
 | 2 | `reference` | object_reference | no | The referenced object (replied post, message, etc.). |
 | 3 | `text` | text | no | Optional client-presentable summary. |
@@ -31,6 +31,6 @@ Consequently:
 
 Delivery is by normal synchronization: the notifying client or the notifying account's device publishes the notification object and a reference event; the recipient's instance synchronizes it per `62-synchronization.md`. Push outside the base protocol is out of scope.
 
-## 72.5 Blocks and mutes
+## 72.5 Blocks
 
-Instances MUST NOT deliver notifications for accounts that the recipient has blocked (`50.5`) and SHOULD suppress mute-relevant notification kinds for muted accounts (`50.6`).
+Instances MUST NOT deliver notifications for accounts that the recipient has blocked (`50.5`). A mute-like client-side preference is not a protocol concept; accounts suppress or mute content locally outside the base protocol.

@@ -1,6 +1,6 @@
 # 101. Implementation requirements
 
-This module defines the required implementation structure, the extension process, and the completeness checklist for version 1.0.
+This module defines the required implementation structure, the extension process, and the completeness checklist.
 
 ## 101.1 Required implementation layers
 
@@ -51,9 +51,9 @@ No extension SHOULD be merged merely because an implementation already exists.
 
 Extensions MUST follow `81.5`: they MUST NOT change the meaning of existing fields and MUST NOT reuse registered identifiers. A new cryptographic construction MUST register a new domain-separation label in `20.12`. A new capability MUST be registered in `81.3`; a new error code in `80.2`; a new event type in `34.2`; a new object type in `33.7`.
 
-## 101.5 Version 1.0 completeness checklist
+## 101.5 Completeness checklist
 
-The foundational draft's section 178 requirements are satisfied by the following modules. Before Loopable Protocol 1.0 is declared stable, each MUST remain fully specified here (and in `schemas/`, `examples/`, and `test-vectors/` as noted), rather than being left implementation-defined:
+The completeness requirements are satisfied by the following modules. Each MUST remain fully specified here (and in `schemas/`, `examples/`, and `test-vectors/` as noted), rather than being left implementation-defined:
 
 | Requirement | Home |
 | ----------- | ---- |
@@ -67,7 +67,7 @@ The foundational draft's section 178 requirements are satisfied by the following
 | HTTP authentication format and request signature | `61-federation-authentication.md` |
 | Replay window | `61.7`, `82.1` |
 | Event serialization and signature input | `30-serialization.md`, `22-signatures.md` |
-| Object envelope, AES-GCM AAD, HPKE envelope, recipient records | `33-object-envelope.md`, `23-encryption.md`, `24-hpke.md` |
+| Object envelope, AES-GCM AAD, HPKE envelope, recipient records, streaming media encryption | `33-object-envelope.md`, `23-encryption.md`, `24-hpke.md`, `35-media-encryption.md` |
 | Device authorization, revocation, transfer schemas | `12-devices.md`, `34.4`, `34.5`, `34.6` |
 | Account and object deletion semantics | `40-account-lifecycle.md`, `65-object-storage.md` |
 | Object versioning and concurrent-edit semantics | `55-content.md`, `64-conflict-resolution.md` |
@@ -76,7 +76,7 @@ The foundational draft's section 178 requirements are satisfied by the following
 | MLS identity binding and event representation | `25-mls.md`, `34.11` |
 | Group and membership lifecycle | `53-contexts-and-membership.md` |
 | Profile, follower/following, search, notification semantics | `51-profiles.md`, `50-social-relationships.md`, `71-search.md`, `72-notifications.md` |
-| Media protocol | `56-media-and-files.md` |
+| Media protocol | `56-media-and-files.md`, `35-media-encryption.md` |
 | Object-storage API, retention, replication | `65-object-storage.md`, `60.5` |
 | Complete cryptographic and serialization test vectors | `test-vectors/` |
 | Interoperability test suite | `examples/` and `test-vectors/` |
@@ -85,11 +85,11 @@ The foundational draft's section 178 requirements are satisfied by the following
 | Metadata and privacy analysis | `91-privacy.md` |
 | Downgrade and compatibility analysis | `81-versioning-and-capabilities.md` |
 
-Until these are complete, the protocol remains a foundational draft rather than a final wire-level standard.
-
 ## 101.6 Test requirements
 
 Before an implementation is considered protocol-compatible it SHOULD pass serialization, cryptographic, identity, device, event, DAG, federation, encryption, MLS, deletion, username, synchronization, and negative/security tests. Negative tests are especially important; the mandatory negative behaviors are listed in `82.3`.
+
+Interoperation against the reference vectors alone is necessary but not sufficient: implementations SHOULD also be tested pair-wise against at least one other independent implementation. Pair-wise interop coverage SHOULD include at minimum: account creation and lookup; posts with attachments referencing media objects; media upload and byte-range retrieval (`35.10`, `35.11`); follower and block visibility (`50.4`, `50.5`); synchronization of events and objects across instances; and a deletion flow (`40.4`, `65.6`). Discrepancies found only through pair-wise testing MUST be resolved in the specification, per `101.3`.
 
 ## 101.7 Reference artifacts
 

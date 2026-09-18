@@ -1,0 +1,169 @@
+{
+  "vectors": [
+    {
+      "value": 0,
+      "cbor": "00",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "00",
+      "_name": "canonical-cbor/int-zero"
+    },
+    {
+      "value": 23,
+      "cbor": "17",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "17",
+      "_name": "canonical-cbor/int-twenty-three"
+    },
+    {
+      "value": 24,
+      "cbor": "1818",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "1818",
+      "_name": "canonical-cbor/int-twenty-four"
+    },
+    {
+      "value": 255,
+      "cbor": "18ff",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "18ff",
+      "_name": "canonical-cbor/int-two-hundred-fifty-five"
+    },
+    {
+      "value": 256,
+      "cbor": "190100",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "190100",
+      "_name": "canonical-cbor/int-two-hundred-fifty-six"
+    },
+    {
+      "value": 65535,
+      "cbor": "19ffff",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "19ffff",
+      "_name": "canonical-cbor/int-sixty-five-thousand-five-hundred-thirty-five"
+    },
+    {
+      "value": 65536,
+      "cbor": "1a00010000",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "1a00010000",
+      "_name": "canonical-cbor/int-two-to-the-sixteenth"
+    },
+    {
+      "value": 4294967295,
+      "cbor": "1affffffff",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "1affffffff",
+      "_name": "canonical-cbor/int-two-to-the-thirty-second-minus-one"
+    },
+    {
+      "value": 4294967296,
+      "cbor": "1b0000000100000000",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "1b0000000100000000",
+      "_name": "canonical-cbor/int-two-to-the-thirty-second"
+    },
+    {
+      "value": "18446744073709551615",
+      "cbor": "1bffffffffffffffff",
+      "notes": "preferred fixed-length integer encoding; no expansion",
+      "expected_cbor": "1bffffffffffffffff",
+      "_name": "canonical-cbor/int-two-to-the-sixty-fourth-minus-one"
+    },
+    {
+      "value": "",
+      "cbor": "40",
+      "notes": "empty byte string uses a definite-length header",
+      "_name": "canonical-cbor/empty-bytes"
+    },
+    {
+      "value": {
+        "k1": 1,
+        "k2": "longer key",
+        "k3": 3
+      },
+      "cbor": "a502030a01617862796f626162026361626304",
+      "notes": "map keys sort by encoded length then bytewise (30.3); integer and text keys interleave by those rules",
+      "_name": "canonical-cbor/map-ordering"
+    },
+    {
+      "value": {
+        "a": [
+          1,
+          2,
+          3
+        ],
+        "b": {}
+      },
+      "cbor": "a26161830102036162a0",
+      "notes": "nested arrays and maps use definite-length headers",
+      "_name": "canonical-cbor/nested-structure"
+    },
+    {
+      "value": "hello",
+      "cbor": "6568656c6c6f",
+      "notes": "text is valid UTF-8 with no unpaired surrogates",
+      "_name": "canonical-cbor/text"
+    },
+    {
+      "value": true,
+      "cbor": "a14105f5",
+      "notes": "booleans are legal CBOR; the protocol prefers omitting optional fields, but a present boolean must still parse (30.2.10)",
+      "_name": "canonical-cbor/boolean"
+    },
+    {
+      "reason": "duplicate integer key 1 in a map (30.8)",
+      "cbor": "a201010102",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-a2010101"
+    },
+    {
+      "reason": "indefinite-length text string (30.2.3)",
+      "cbor": "7f616161ff",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-7f616161"
+    },
+    {
+      "reason": "indefinite-length byte string (30.2.3)",
+      "cbor": "5f414261ff",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-5f414261"
+    },
+    {
+      "reason": "indefinite-length array (30.2.4)",
+      "cbor": "9f0102ff",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-9f0102ff"
+    },
+    {
+      "reason": "indefinite-length map (30.2.4)",
+      "cbor": "bf0101ff",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-bf0101ff"
+    },
+    {
+      "reason": "value 23 encoded in two bytes instead of the preferred single byte (30.2.2)",
+      "cbor": "1817",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-1817"
+    },
+    {
+      "reason": "value 256 encoded in five bytes instead of the preferred three (30.2.2)",
+      "cbor": "1a00000100",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-1a000001"
+    },
+    {
+      "reason": "CBOR semantic tag 1 present; protocol data MUST NOT contain tags (30.2.9)",
+      "cbor": "c100",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-c100"
+    },
+    {
+      "reason": "text containing non-shortest-form UTF-8 encoding of NUL",
+      "cbor": "6161c080",
+      "expected_error": "E_MALFORMED_ENCODING",
+      "_name": "canonical-cbor/negative-6161c080"
+    }
+  ]
+}

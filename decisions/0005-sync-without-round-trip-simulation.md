@@ -1,11 +1,11 @@
 # 0005: Synchronization without "round-trip simulation"
 
 * Status: accepted
-* Basis: `spec/62-synchronization.md`, `spec/63-event-dependencies.md`; draft sections 39-40 and 154 introduced "round-trip simulation" to justify re-sending events when the peer "already has them".
+* Basis: `spec/62-synchronization.md`, `spec/63-event-dependencies.md` (resolves the earlier "round-trip simulation" idea of re-sending events when the peer already has them).
 
 ## Context
 
-The draft proposed re-fetching objects an implementation already holds, as a heuristic for repairing invalid local state. That turns a protocol exchange into a state-repair mechanism with no defined failure signal.
+An earlier proposal re-fetched objects an implementation already holds, as a heuristic for repairing invalid local state. That turns a protocol exchange into a state-repair mechanism with no defined failure signal.
 
 ## Alternatives
 

@@ -25,11 +25,10 @@ direct_message_content = {
 ; Profile content (spec 51.1)
 profile_content = {
   ? 0 => text,                        ; display_name (optional)
-  ? 1 => text,                        ; biography (optional)
+  ? 1 => text,                        ; bio (optional)
   ? 2 => object_reference,            ; avatar (optional)
   ? 3 => object_reference,            ; banner (optional)
-  ? 4 => text,                        ; site (optional)
-  ? 5 => {* uint => any},             ; extra (optional)
+  ? 4 => text,                        ; pronouns (optional, free-form text)
 }
 
 ; Relationship content (spec 50.3)
@@ -40,18 +39,24 @@ relationship_content = {
 
 ; Media content (spec 56.1)
 media_content = {
-  0 => text,                          ; media_type (IANA MIME, lowercase)
-  1 => uint,                          ; byte_length
-  2 => sha256_digest,                 ; plaintext_sha256
-  ? 3 => text,                        ; filename (optional)
-  ? 4 => uint,                        ; width (optional)
-  ? 5 => uint,                        ; height (optional)
-  ? 6 => uint,                        ; duration_ms (optional)
+  1 => text,                          ; media_type (IANA MIME, lowercase)
+  ? 2 => text,                        ; filename (optional)
+  3 => uint,                          ; size (MUST equal length(data))
+  4 => bytes,                         ; data (exact plaintext file bytes)
+  ? 5 => media_metadata,              ; metadata (optional)
+  ? 6 => object_reference,            ; thumbnail_reference (optional, spec 56.6)
+}
+
+; Media metadata (spec 56.1)
+media_metadata = {
+  ? 0 => uint,                        ; width (pixels, raster media)
+  ? 1 => uint,                        ; height (pixels, raster media)
+  ? 2 => uint,                        ; duration_ms (timed media)
 }
 
 ; Notification content (spec 72.2)
 notification_content = {
-  0 => uint,                          ; kind (0..5)
+  0 => uint,                          ; kind (0..6)
   1 => account_id,                    ; actor_account_id
   ? 2 => object_reference,            ; reference (optional)
   ? 3 => text,                        ; text (optional)

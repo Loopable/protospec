@@ -24,9 +24,9 @@ event = {
 
 device_id_or_empty = device_id / bytes .size 0
 
-; Event type codes (spec/34-event-types.md). Types 0..24 are registered;
+; Event type codes (spec/34-event-types.md). Types 0..25 are registered;
 ; unknown codes are rejected (spec 82.3) except as allowed by spec 81.4.
-event_type = 0..24
+event_type = 0..25
 
 ; The applicable member of this union is selected by the event_type value.
 event_body = event_body_account_created /
@@ -36,6 +36,7 @@ event_body = event_body_account_created /
              event_body_username_changed /
              event_body_account_deleted /
              event_body_relationship /
+             event_body_profile_updated /
              event_body_empty /
              event_body_post_edited /
              event_body_reply_created /
@@ -43,7 +44,8 @@ event_body = event_body_account_created /
              event_body_group_deleted /
              event_body_group_member_added /
              event_body_group_epoch /
-             event_body_message_created
+             event_body_message_created /
+             event_body_profile_visibility_set
 
 ; ACCOUNT_CREATED (0) - signed by the account identity key whose public key is
 ; in field 0. account_id in the envelope MUST derive from it (spec 34.3).
@@ -87,14 +89,23 @@ event_body_account_deleted = {
   ? 0 => reason_code,        ; reason (optional)
 }
 
-; Relationship events (6..11): FOLLOW_CREATED, FOLLOW_REMOVED, BLOCK_CREATED,
-; BLOCK_REMOVED, MUTE_CREATED, MUTE_REMOVED (spec 34.9)
+; Relationship events (6..9): FOLLOW_CREATED, FOLLOW_REMOVED, BLOCK_CREATED,
+; BLOCK_REMOVED (spec 34.9). Codes 10 and 11 (previously the mute events) are
+; retired and MUST NOT be emitted or applied (spec 34.2).
 event_body_relationship = {
   0 => account_id,           ; target_account_id
 }
 
-; Content events with empty bodies: PROFILE_UPDATED (12), POST_CREATED (13),
-; POST_DELETED (15). The referenced object lives in envelope object_references.
+; PROFILE_UPDATED (12) - carries the public profile card only while the account
+; is public (spec 34.10, 51.5); otherwise the body MUST be empty.
+event_body_profile_updated = {
+  ? 0 => text,                ; display_name (public card)
+  ? 1 => text,                ; bio
+  ? 2 => text,                ; pronouns
+}
+
+; Content events with empty bodies: POST_CREATED (13), POST_DELETED (15).
+; The referenced object lives in envelope object_references.
 event_body_empty = {}
 
 ; POST_EDITED (14)
@@ -137,6 +148,12 @@ event_body_group_epoch = {
 ; MESSAGE_CREATED (24)
 event_body_message_created = {
   ? 0 => context_id,         ; context (optional)
+}
+
+; PROFILE_VISIBILITY_SET (25) - sets the account's public-profile election
+; (spec 34.13). Absence, or a latest value of false, means private.
+event_body_profile_visibility_set = {
+  0 => bool,                 ; profile_is_public
 }
 
 context_id = bytes .size 16

@@ -5,7 +5,7 @@
 
 ## Context
 
-The draft gives each instance a single static key pair used for everything. That couples key rotation to instance identity and makes a single compromise long-lived.
+A single static instance key pair used for everything couples key rotation to instance identity and makes a single compromise long-lived.
 
 ## Alternatives
 

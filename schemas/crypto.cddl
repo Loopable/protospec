@@ -1,4 +1,4 @@
-; crypto.cddl - cryptographic material types (spec/20, spec/22, spec/23)
+; crypto.cddl - cryptographic material types (spec/20, spec/22, spec/23, spec/35)
 
 ed25519_public_key = bytes .size 32
 ed25519_signature  = bytes .size 64
@@ -6,12 +6,19 @@ x25519_public_key  = bytes .size 32
 x25519_private_key = bytes .size 32
 
 sha256_digest   = bytes .size 32
-aes_gcm_nonce   = bytes .size 12
 aes_gcm_tag     = bytes .size 16
+
+; Envelope nonce field: 12 bytes for encryption_suite 0, empty for suite 1
+; (spec/33-object-envelope.md, spec/35-media-encryption.md).
+object_nonce = bytes .size 12 / bytes .size 0
 
 ; AES-256-GCM ciphertext field: ciphertext followed by the 16-byte tag
 ; (spec 23.3).
 aes_ciphertext_with_tag = bytes
+
+; Streaming AEAD ciphertext field: Header(40) followed by the formatted
+; segments (spec/35-media-encryption.md).
+streaming_ciphertext = bytes
 
 cek = bytes .size 32      ; content encryption key; never on the wire in plaintext
 

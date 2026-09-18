@@ -50,7 +50,7 @@ Follower and following lists are served only under `50.4`. Counts MAY be visible
 
 ## 91.7 No global directory
 
-There is no protocol-level global public user directory, global account execution, or unrestricted search (`71-search.md`, `13.7`). Profile visibility is scoped by context (`51.3`), preventing an accidental global directory from emerging.
+There is no protocol-level global public user directory, global account execution, or unrestricted search (`71-search.md`, `13.7`). Profile visibility is scoped by context (`51.3`), preventing an accidental global directory from emerging. An account that independently elects a public profile (`51.5`) is individually lookupable; this is an explicit user election and does not change the other guarantees of this section.
 
 ## 91.8 Notifications
 
@@ -59,3 +59,24 @@ Notifications MUST NOT expose plaintext content the recipient is not authorized 
 ## 91.9 Retention
 
 Instances MAY apply local retention policies per `65.7`. Retention MUST NOT modify event or object contents, and MUST be applied conservatively to metadata, per `91.2`.
+
+## 91.10 Who can see what
+
+The following table states the default visibility of each artifact. "Home instance" is the account's hosting instance; "federated instance" is a peer that legitimately receives the artifact; "unrelated instance" is any other protocol peer; "public observer" is anyone reachable over the network.
+
+| Artifact | Authorized devices | Home instance | Federated instances | Unrelated instances | Public observer |
+| -------- | ------------------ | ------------- | ------------------- | ------------------- | --------------- |
+| Object plaintext | yes | no (ciphertext only) | no | no | no |
+| Object ciphertext | yes | yes | only when relayed/stored (`65.5`) | no | no |
+| Object and event IDs | yes | yes | yes, when exchanged | only when known | only when published/public (`91.7`) |
+| Event signatures | yes | yes | yes | only when exchanged | no |
+| Account ID and public keys | yes | yes | yes | only via authenticated lookup | only when public profile (`51.5`) or published |
+| Handle/username | yes | yes | yes | only via authenticated lookup | only when public profile or published |
+| Follow/follower lists | yes (derived, `50.4`) | hosts signed relationship events (`50.3`); no plaintext labels | only when the account's event stream is exchanged | no | no |
+| Instance document and roles | yes | publishes | yes | yes | yes (public, `13.3.1`, `13.10.4`) |
+| Public profile card | yes | yes | yes | yes via public lookup | yes (`51.5`) |
+| Group membership | yes | yes, within context | only as needed | only within context | no |
+| Block relationships | effect on blocker only (`50.5`) | yes (hosts the block events) | only when the blocker's event stream is exchanged | no | no |
+| Membership/moderation state (own account) | yes | yes | only as needed | only within context | only where disclosed (`13.10`) |
+
+Instances must not treat this table as a permission system; it restates the protocol defaults of the cited sections. Any deviation from these defaults requires an explicit protocol mechanism.

@@ -4,7 +4,7 @@ This example shows the trusted-device flow and a device handover, in the sequenc
 
 ## Setup
 
-Alice's account exists at `instance.social` with one client `dv_alpha` (trusted, authorized). She adds a backup device `dv_backup` over a pairing channel, and later replaces her laptop.
+Alice's account exists at `instance.social` with one client `dv_alpha` (trusted, authorized). She adds a backup device `dv_backup` through the protocol-enabled join request and trusted-device approval flow (`spec/60.10`, `spec/41.1`), and later replaces her laptop.
 
 ## 1. Device record
 

@@ -48,3 +48,14 @@ capability = {
 }
 
 capabilities_response = [* capability]
+
+; Device join request (spec/60-federation.md section 60.10). Unauthenticated:
+; the submitting device is not yet authorized, so the keys are self-asserted.
+device_join_request = {
+  0 => account_id,              ; account_id
+  1 => device_id,               ; device_id (16 random bytes, spec 10.4)
+  2 => ed25519_public_key,      ; signing_public_key
+  3 => x25519_public_key,       ; encryption_public_key
+  4 => device_kind,             ; device_kind (spec 12.5)
+  ? 5 => text,                  ; display_name (optional)
+}

@@ -93,7 +93,7 @@ A reply or quote MAY reference an earlier object. The reference MUST NOT automat
 
 * Changing an object's audience MUST create a new event.
 * The original encrypted object MUST remain immutable.
-* Public-to-private and private-to-public transitions MUST NOT merely modify metadata: the content SHOULD be re-encrypted with a new content-encryption key distributed only to the authorized recipients, per `154` of the foundational draft. A new version is created where required.
+* Public-to-private and private-to-public transitions MUST NOT merely modify metadata: the content SHOULD be re-encrypted with a new content-encryption key distributed only to the authorized recipients. A new version is created where required.
 * Existing private keys MUST NOT be reused as the public distribution mechanism if that would preserve unauthorized access.
 
 ## 55.9 Deletion

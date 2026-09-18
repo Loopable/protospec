@@ -120,7 +120,7 @@ Envelope (`spec/33-object-envelope.md`):
 There is no envelope-level key identifier; the recipient record carries `recipient_key_id` per `spec/24-hpke.md` 24.6. The derived `envelope_id` may be computed from the complete envelope for caching or deduplication (`spec/33-object-envelope.md` 33.3).
 
 
-The client also computes `plaintext_sha256` for later content integrity checks if the post includes media; for this text-only post it is optional.
+Integrity of media content comes from the encryption itself: plaintext segments authenticate before use (`spec/35-media-encryption.md` 35.7), and for a text-only post no media is involved.
 
 ## 5. POST_CREATED event (empty body)
 

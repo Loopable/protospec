@@ -1,11 +1,11 @@
 # 0009: Username and deletion reservation windows
 
-* Status: blocking
-* Basis: `spec/11-accounts.md` 11.8, `spec/40-account-lifecycle.md`, `spec/65-object-storage.md`; draft sections 33 and 40 describe conflicting reservation durations (14 days of closure grace and a distinct deletion timeline).
+* Status: accepted
+* Basis: `spec/11-accounts.md` 11.8, `spec/40-account-lifecycle.md`, `spec/65-object-storage.md`; earlier text described conflicting reservation durations (14 days of closure grace and a distinct deletion timeline).
 
 ## Context
 
-The draft is ambiguous about what a name means while an account is being deleted: it mentions a short closure-window and a separate deletion process, without saying which governs a username held by the account being deleted.
+Earlier text was ambiguous about what a name means while an account is being deleted: it mentioned a short closure-window and a separate deletion process, without saying which governs a username held by the account being deleted.
 
 ## Alternatives
 
@@ -17,8 +17,9 @@ The draft is ambiguous about what a name means while an account is being deleted
 
 A username freed by any transition stays reserved to the account for a reservation window of 90 days (the deletion timeline), during which new registrations receive `E_USERNAME_UNAVAILABLE` and resolution of the old handle points to the former holder. After the window the name is released.
 
-## Consequences (MUST be reviewed before 1.0)
+## Consequences
 
-* The 90-day number is deliberately longer than the draft's 14-day closure window. The working group must confirm the concrete duration, because 90 days is the compromise the spec currently records.
-* Handle squatting between deletion start and release is prevented.
+The 90-day duration is confirmed. `spec/40-account-lifecycle.md` 40.3 and `spec/82-limits-and-validation.md` record it consistently, as does the `USERNAME_CHANGED` note in `spec/34-event-types.md` 34.7.
+
+* Username squatting between deletion start and release is prevented.
 * A deleted account's historical events remain, so the handle always resolves to the deleted account until the window ends.

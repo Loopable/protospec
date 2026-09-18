@@ -2,13 +2,23 @@
 ; (spec/13-instances.md)
 
 ; Instance document (spec 13.3.1). Signed by the instance root key over
-; "loopable-instance-document-v1" 0x00 || deterministic_cbor(without key 4).
+; "loopable-instance-document-v1" 0x00 || deterministic_cbor(without key 8).
 instance_document = {
   0 => protocol_version,        ; protocol_version
   1 => instance_id,             ; instance_id
   2 => ed25519_public_key,      ; root_public_key
   3 => [+ instance_op_key],     ; operational_keys (at least one)
-  4 => ed25519_signature,       ; signature
+  4 => text,                    ; domain (canonical hostname, spec 13.4)
+  5 => account_id,              ; administrator (instance owner, spec 13.10)
+  ? 6 => text,                  ; description (optional)
+  ? 7 => [* text],              ; rules (optional, flat list of rule strings)
+  8 => ed25519_signature,       ; signature
+}
+
+; Instance staff roles (spec 13.10.4), served by GET /v1/instance/roles.
+instance_roles = {
+  0 => account_id,              ; administrator
+  1 => [* account_id],          ; moderators
 }
 
 instance_op_key = {

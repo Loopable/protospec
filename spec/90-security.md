@@ -51,4 +51,4 @@ Federation requests carry a timestamp and request id and MUST satisfy `61.5`. Th
 
 ## 90.10 Security review gates
 
-Before Loopable 1.0, the following MUST have been completed and published: a security audit of the cryptographic composition, a security review of federation authentication (`61-federation-authentication.md`), a metadata and privacy analysis (`91-privacy.md`), and a downgrade and compatibility analysis (`81-versioning-and-capabilities.md`). These are tracked as developer requirements in `101-implementation-requirements.md`.
+The following MUST have been completed and published: a security audit of the cryptographic composition, a security review of federation authentication (`61-federation-authentication.md`), a metadata and privacy analysis (`91-privacy.md`), and a downgrade and compatibility analysis (`81-versioning-and-capabilities.md`). These are tracked as developer requirements in `101-implementation-requirements.md`.

@@ -17,6 +17,7 @@ An implementation SHOULD use a maintained, security-reviewed cryptographic libra
 | Instance signatures | Ed25519 (RFC 8032) |
 | Account/device key agreement | X25519 (RFC 7748) |
 | General object encryption | AES-256-GCM (RFC 5116, NIST SP 800-38D) |
+| Streaming media encryption | AES-256-GCM-HKDF Streaming AEAD (`35-media-encryption.md`) |
 | General KDF | HKDF-SHA-256 (RFC 5869) |
 | General protocol hashing | SHA-256 (FIPS 180-4) |
 | General public-key encryption | HPKE (RFC 9180) |
@@ -103,6 +104,8 @@ Rules:
 
 The AES-GCM encryption and decryption constructions used by the protocol are defined in `23-encryption.md`.
 
+Media objects use a segmented streaming construction built from AES-256-GCM and HKDF-SHA-256, defined in `35-media-encryption.md`. It is `encryption_suite` `1`; it does not replace AES-256-GCM for ordinary objects (`20.10`).
+
 ## 20.8 HPKE
 
 HPKE (RFC 9180) is the standard public-key encryption construction for encrypting a secret to one recipient.
@@ -166,7 +169,7 @@ A label is the ASCII byte string given below, including the trailing `0x00` byte
 | Instance ID derivation | `loopable-instance-id` `0x00` | `10-identifiers.md` |
 | Event signature | `loopable-event-v1` `0x00` | `22-signatures.md` |
 | First-device authorization signature | `loopable-first-device-authorization-v1` `0x00` | `22-signatures.md`, `34-event-types.md` |
-| Object encryption AAD | `loopable-object-v1` `0x00` | `23-encryption.md` |
+| Object encryption AAD | `loopable-object-v1` `0x00` | `23-encryption.md`, `35-media-encryption.md` |
 | Recipient key identifier | `loopable-recipient-key-id-v1` `0x00` | `24-hpke.md` |
 | HPKE object-key wrapping | `loopable-hpke-object-key-v1` `0x00` | `24-hpke.md` |
 | Object envelope identifier (derived) | `loopable-object-envelope-v1` `0x00` | `33-object-envelope.md` |

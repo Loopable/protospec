@@ -1,0 +1,72 @@
+{
+  "vectors": [
+    {
+      "inputs": {
+        "identity_public_key": "b2af5c8cfb5015820062f802db87e6ebf652659af49647e154b542d1c37db032",
+        "root_public_key": "bee7158d614bff90eec923a48907b07ca746c0051f4b82422f49c233cb765d03",
+        "event_id_wire": "b0cc34a1b6b33fe1372aae2075ec0b5f",
+        "object_id_wire": "c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c7",
+        "version_id_wire": "21039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "device_id_wire": "58e8f835751254e3df53a29ceb9b6fc9",
+        "request_id_wire": "5a5155b56ba08bef20b4a75262f0bd48",
+        "key_id_wire": "072621c8576de1545fe04ee360436158",
+        "recipient_key_id_wire": "adc90717c7e3da680e9a8a081547503f"
+      },
+      "expected": {
+        "account_id_wire": "27e7acb660775d4d2c6677ac5714195fd272c572dc27eb113928bd0bc85f2f3f",
+        "instance_id_wire": "a23d8749337cb2b0871379fd1f31b03fbb138f71b89b4453adb2f5f6e4817a04",
+        "account_id_text": "e7t2zntao5ou2ldgo6wfofazl7jhfrls3qt6wejzfc6qxsc7f47q",
+        "instance_id_text": "ui6yosjtpszlbbytph6r6mnqh65rhd3rxcnuiu5nwl27nzebpica",
+        "event_id_text": "wdgdjinwwm76cnzkvyqhl3all4",
+        "object_id_text": "yz5x6h4lusy7czkv7ruqk7i3zonlvv3ukskeza4h55o4sxlnotdq",
+        "version_id_text": "eebzdfldrodpg47qcwqajkzgpwzbrtaav4h2cdfq7znnpu4si6gq",
+        "device_id_text": "ldupqnlvcjkohx2tukooxg3pze",
+        "request_id_text": "ljivlnllucf66ifuu5jgf4f5ja",
+        "key_id_text": "a4tcdscxnxqvix7aj3rwaq3bla",
+        "recipient_key_id_text": "vxeqof6h4pngqdu2riebkr2qh4"
+      },
+      "checks": {
+        "account_id_derives_from_identity": true,
+        "instance_id_derives_from_root": true,
+        "account_id_text_is_52_chars": true,
+        "account_id_text_is_lowercase": true,
+        "id16_text_is_26_chars": true,
+        "key_id_is_first_16_bytes_of_key_hash": true,
+        "no_padding_in_text": true
+      },
+      "_name": "identifiers/valid"
+    },
+    {
+      "reason": "text form contains RFC 4648 padding, which the canonical text form forbids",
+      "expected_error": "E_BAD_REQUEST",
+      "inputs": {
+        "text_form": "yz5x6h4lusy7czkv7ruqk7i3zonlvv3ukskeza4h55o4sxlnotdq="
+      },
+      "_name": "identifiers/negative-padding"
+    },
+    {
+      "reason": "text form length does not match the identifier type (52 chars for account_id)",
+      "expected_error": "E_BAD_REQUEST",
+      "inputs": {
+        "text_form": "e7t2zntao5ou2ldgo6wfofazl7jhfrls3qt6wejzfc6qxsc7f4"
+      },
+      "_name": "identifiers/negative-wrong-length"
+    },
+    {
+      "reason": "text form contains characters outside the base32 alphabet",
+      "expected_error": "E_BAD_REQUEST",
+      "inputs": {
+        "text_form": "07t2zntao5ou2ldgo6wfofazl7jhfrls3qt6wejzfc6qxsc7f47q"
+      },
+      "_name": "identifiers/negative-bad-character"
+    },
+    {
+      "reason": "uppercase input is accepted only by lowercasing first (input is case-insensitive)",
+      "expected_error": null,
+      "expected": {
+        "text_form_lowercased": "YZ5X6H4LUSY7CZKV7RUQK7I3ZONLVV3UKSKEZA4H55O4SXLNOTDQ"
+      },
+      "_name": "identifiers/case-insensitive-input"
+    }
+  ]
+}

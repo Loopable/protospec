@@ -24,6 +24,8 @@ The protocol follows these requirements:
 
 "Public" content therefore means content that any authorized Loopable participant satisfying the object audience policy may obtain decryption material for. It does not mean plaintext stored in an instance database.
 
+Account metadata that is served in plaintext for protocol operation, such as the canonical handle (`11.4`) and a user-elected public profile card (`51.5`), is not content and is not affected by this requirement.
+
 ## 0.3 Reading model
 
 Each module in this specification separates three layers where applicable:

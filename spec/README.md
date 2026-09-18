@@ -15,7 +15,7 @@ The specification is organized into numbered modules. Each module has one author
 | `00` to `02`         | Introduction, conventions, overview |
 | `10` to `13`         | Identifiers, accounts, devices, instances |
 | `20` to `25`         | Cryptographic primitives, key management, signatures, encryption, HPKE, MLS |
-| `30` to `34`         | Serialization, wire types, event envelope, object envelope, event types |
+| `30` to `35`         | Serialization, wire types, event envelope, object envelope, event types, media streaming encryption |
 | `40` to `42`         | Account, device, and authorization lifecycles |
 | `50` to `56`         | Social relationships, profiles, contexts, messaging, content, media |
 | `60` to `65`         | Federation, federation authentication, synchronization, dependencies, conflicts, object storage |
@@ -30,13 +30,11 @@ Every module SHOULD be readable on its own, but an implementer building the full
 
 The numbered modules are the authoritative normative definition of Loopable Protocol 0.1.
 
-`loopable-protocol.md` in this directory is a copy of the foundational draft from which the modules were derived. It is retained as an archival overview and design rationale. Where a numbered module defines exact wire behavior, serialization, field layout, or validation, the module is authoritative. The draft remains normative only for statements that no module otherwise defines or contradicts.
-
 Conflicts between the modules and any other repository artifact are resolved in favor of the modules. The specification is the source of truth; `schemas/`, `test-vectors/`, and `examples/` support it and MUST agree with it.
 
 ## Completeness
 
-The modular specification is intended to satisfy the completeness checklist that section 178 of the foundational draft established. The requirement list from that section is reorganized into the modules so that every requirement has one authoritative normative home:
+The requirements are reorganized into the modules so that every requirement has one authoritative normative home:
 
 * Canonical serialization rules: `30-serialization.md`, `31-wire-types.md`
 * Identifier encodings and derivation: `10-identifiers.md`
@@ -45,6 +43,7 @@ The modular specification is intended to satisfy the completeness checklist that
 * Account identity, username grammar, deletion: `11-accounts.md`, `40-account-lifecycle.md`
 * Device authorization, revocation, transfer: `12-devices.md`, `41-device-lifecycle.md`
 * Canonical signing and encryption domains: `22-signatures.md`, `23-encryption.md`, `24-hpke.md`
+* Media streaming encryption and resumable upload: `35-media-encryption.md`, `56-media-and-files.md`
 * Federation endpoints, authentication, replay window: `60-federation.md`, `61-federation-authentication.md`
 * Synchronization and missing-event behavior: `62-synchronization.md`, `63-event-dependencies.md`
 * Conflict resolution and versioning: `64-conflict-resolution.md`, `55-content.md`

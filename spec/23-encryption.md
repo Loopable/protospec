@@ -6,6 +6,8 @@ This module is the authoritative definition of how ordinary Loopable objects are
 
 Every Loopable social object MUST be encrypted before being persisted as a protocol object, including objects whose authorization policy treats them as public. There is no plaintext-content mode. This construction defines the object content encryption; the envelope that carries the result is defined in `33-object-envelope.md`.
 
+Media objects (object type `3`) use a distinct segmented streaming mode, defined in `35-media-encryption.md`. It shares this module's associated data (`23.4`) but has its own suite identifier and parameters. All other objects use the AES-256-GCM construction in this module.
+
 ## 23.2 Parameters
 
 | Parameter | Value |
@@ -48,7 +50,7 @@ where `ObjectSecurityMetadata` is the following canonical CBOR map:
 | 0 | `protocol_version` | text | yes | Protocol version of the object, `"0.1"`. |
 | 1 | `object_id` | bytes(32) | yes | The object identifier, per `10.4`. |
 | 2 | `object_type` | uint | yes | The object type code from `33.7`. |
-| 3 | `encryption_suite` | uint | yes | `0` for the mandatory AES-256-GCM suite. |
+| 3 | `encryption_suite` | uint | yes | `0` for the mandatory AES-256-GCM suite; `1` for streaming media encryption (`35-media-encryption.md`). |
 | 4 | `version_id` | bytes(32) | yes | The version identifier, per `55-content.md`. |
 
 The numeric map keys and types above are normative and MUST match the object envelope field keys of `33-object-envelope.md`. `deterministic_cbor` follows `30-serialization.md`. In protocol version 0.1 every object has a version identity, so the `version_id` entry MUST always be present.

@@ -5,7 +5,7 @@
 
 ## Context
 
-The draft describes event kinds and object types loosely, leaving type names as implementation-defined strings.
+Event kinds and object types were described loosely, leaving type names as implementation-defined strings.
 
 ## Alternatives
 

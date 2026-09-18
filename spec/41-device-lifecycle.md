@@ -8,9 +8,12 @@ Provisioning is performed on the device by its owner:
 
 1. Generate an Ed25519 device signing key pair and an X25519 device encryption key pair, independently, per `21.4`.
 2. Generate a random 16-byte `device_id`, per `10.4`.
-3. Present the device's public keys and `device_id` to the account's current trusted device through a mechanism that is not part of this protocol (for example a pairing handshake over a trusted channel).
-4. The trusted device signs a `DEVICE_AUTHORIZED` event per `34.4`.
-5. After the event becomes authoritative, the new device is an authorized device. Only then may it submit account events.
+3. Submit the device's public keys and `device_id` to the account's home instance as a device join request (`60.10`).
+4. The home instance notifies the account's trusted device, which presents an approval prompt showing the device's `device_id`, `device_kind`, display name, and public keys (`72.2`). The user approves on the trusted device.
+5. The trusted device signs a `DEVICE_AUTHORIZED` event per `34.4`.
+6. After the event becomes authoritative, the new device is an authorized device. Only then may it submit account events.
+
+Approval MAY instead happen out of band (for example a pairing handshake over a trusted channel), but the protocol-enabled flow is the join request followed by a prompt on the trusted device. In every case the binding is the signed `DEVICE_AUTHORIZED` event; nothing else authorizes the device.
 
 Private keys MUST NOT be transferred through an instance. The old device's private keys MUST NOT be uploaded to the new device through Loopable federation.
 

@@ -5,7 +5,7 @@
 
 ## Context
 
-The draft defines account and instance IDs, but not their derivation from keys, and it uses 10-byte alphanumeric identifiers with a separate text form.
+Account and instance IDs were not defined as derivations from keys, and the earlier design used 10-byte alphanumeric identifiers with a separate text form.
 
 ## Alternatives
 

@@ -85,7 +85,7 @@ The protocol maintains the following invariants across every implementation. The
 12. Device encryption keys use X25519.
 13. General HPKE uses X25519 / HKDF-SHA-256 / AES-256-GCM.
 14. An instance does not need plaintext decryption keys to operate.
-15. There is no protocol-level global public user directory.
+15. There is no protocol-level global public user directory. Public profiles are individually lookupable but not enumerable (`51.5`, `13.7`).
 16. Following does not grant decryption access by itself.
 17. Identity location and object storage location are independent.
 18. Discovery services are not protocol trust roots.

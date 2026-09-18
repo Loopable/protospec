@@ -49,7 +49,7 @@ An instance SHOULD synchronize only events relevant to its members (`60.7`). The
 
 ## 62.6 Duplicate and integrity handling
 
-* Events already held by the pulling instance (by `event_id`) MUST NOT be re-applied, per `39` of the foundational draft. They may be skipped.
+* Events already held by the pulling instance (by `event_id`) MUST NOT be re-applied. They may be skipped.
 * Every received event MUST pass structural and signature validation before application; an event that fails validation MUST be discarded with its error recorded, and MUST NOT be retried against alternate keys.
 * Object integrity is verified by the AES-GCM associated data, per `23.4`. Ciphertext never decrypts to "an invalid object" at the sync layer; it is stored or refused on structural grounds only.
 

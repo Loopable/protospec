@@ -4,8 +4,8 @@ This example follows a username change and its reservation window.
 
 ## Username rules (recap)
 
-* Usernames are canonical-only ASCII letters, digits, underscore in `[a-z0-9_]`, 1-32 chars, no leading/trailing underscore (`spec/11-accounts.md` 11.4).
-* A freed username stays reserved at the home instance for a reservation window (`spec/11-accounts.md` 11.8).
+* Usernames are canonical-only ASCII letters, digits, underscore in `[a-z0-9_]`, 4-14 chars, at least one letter, no leading/trailing underscore (`spec/11-accounts.md` 11.6).
+* A freed username stays reserved at the home instance for a reservation window (`spec/40-account-lifecycle.md` 40.3).
 
 ## 1. Initial state
 

@@ -20,12 +20,13 @@ Every compliant implementation MUST preserve these invariants:
 12. Device encryption keys use X25519.
 13. General HPKE uses X25519 / HKDF-SHA-256 / AES-256-GCM.
 14. An instance does not need plaintext decryption keys to operate.
-15. There is no protocol-level global public user directory.
+15. There is no protocol-level global public user directory. Public profiles are individually lookupable but not enumerable (`51.5`, `13.7`).
 16. Following does not grant decryption access by itself.
 17. Identity location and object storage location are independent.
 18. Discovery services are not protocol trust roots.
 19. Editing or deleting an object creates a new event.
 20. Missing dependencies are explicitly synchronized before events become authoritative.
+21. Staff roles and moderation are instance-local (`13.10`); they never grant or deny plaintext decryption.
 
 ## 100.2 Protocol state
 
