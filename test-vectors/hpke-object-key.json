@@ -1,0 +1,64 @@
+{
+  "vectors": [
+    {
+      "inputs": {
+        "recipient_public_key": "07bbee71a77727b88fb05b09735bdd568fa99d4a5690fbc5e6dc02f338bacf70",
+        "ephemeral_public_key": "796029bc59081407aa41a4200ea7081c922fec82a19934a1ed4409f1b5aad606",
+        "object_id": "c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c7",
+        "cek": "82b63109475b8affd9e9a97a252b696e5cd822c4886b1d5834d5fe5837d84d46",
+        "recipient_kind": 0,
+        "account_id": "27e7acb660775d4d2c6677ac5714195fd272c572dc27eb113928bd0bc85f2f3f",
+        "device_id": "58e8f835751254e3df53a29ceb9b6fc9"
+      },
+      "intermediates": {
+        "recipient_key_descriptor_cbor": "a4000001582027e7acb660775d4d2c6677ac5714195fd272c572dc27eb113928bd0bc85f2f3f025058e8f835751254e3df53a29ceb9b6fc903582007bbee71a77727b88fb05b09735bdd568fa99d4a5690fbc5e6dc02f338bacf70",
+        "recipient_key_id_derivation_input": "6c6f6f7061626c652d726563697069656e742d6b65792d69642d763100a4000001582027e7acb660775d4d2c6677ac5714195fd272c572dc27eb113928bd0bc85f2f3f025058e8f835751254e3df53a29ceb9b6fc903582007bbee71a77727b88fb05b09735bdd568fa99d4a5690fbc5e6dc02f338bacf70",
+        "recipient_key_id": "adc90717c7e3da680e9a8a081547503f",
+        "hpke_info": "6c6f6f7061626c652d68706b652d6f626a6563742d6b65792d763100c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c7adc90717c7e3da680e9a8a081547503f302e31",
+        "dh": "5e64b1d4a4c7eac57dc8e00c30dcaa46fda85858547b79bbb7712fa83b3bb755",
+        "kem_context": "796029bc59081407aa41a4200ea7081c922fec82a19934a1ed4409f1b5aad60607bbee71a77727b88fb05b09735bdd568fa99d4a5690fbc5e6dc02f338bacf70",
+        "shared_secret": "c86abd0f945ae4bdee91427b591968a359afb97e4b30aeb7bcfaf79568264975",
+        "key_schedule_context": "004ce5472ecdd5093ba0aecb8f871ff13f1fbc90ee76f0e18ace1a1b7e565bafa302c27b5c0cf0483bdbffe5d5469a582bb5fcee6987368f6493985b0a8a3ebe48",
+        "aead_key": "a66a30f0142082eb6556b5e1abaab6feb85aab714a84dbe792b7a57ce3a93e68",
+        "base_nonce": "6bc02e99f9932bb02571f472"
+      },
+      "expected": {
+        "encapsulated_key": "796029bc59081407aa41a4200ea7081c922fec82a19934a1ed4409f1b5aad606",
+        "wrapped_key": "922612b04ffcaa68ff116396dc986bc891f9b35d7f34774c316c011b011f39a4e985d4d6f18fa6c38c71a0a7e6ce3244",
+        "recovered_cek": "82b63109475b8affd9e9a97a252b696e5cd822c4886b1d5834d5fe5837d84d46"
+      },
+      "checks": {
+        "roundtrip_recovers_cek": true,
+        "enc_equals_ephemeral_public_key": true
+      },
+      "_name": "hpke-object-key/valid"
+    },
+    {
+      "reason": "recipient_key_id was modified, so HPKE info differs and decryption fails",
+      "expected_error": "E_DECRYPTION_FAILED",
+      "expected": {
+        "tampered_recipient_key_id": "acc90717c7e3da680e9a8a081547503f",
+        "tampered_hpke_info": "6c6f6f7061626c652d68706b652d6f626a6563742d6b65792d763100c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c7acc90717c7e3da680e9a8a081547503f302e31",
+        "rejects": true
+      },
+      "_name": "hpke-object-key/negative-tampered-recipient-key-id"
+    },
+    {
+      "reason": "object_id was modified, so HPKE info differs and decryption fails",
+      "expected_error": "E_DECRYPTION_FAILED",
+      "expected": {
+        "rejects": true
+      },
+      "_name": "hpke-object-key/negative-tampered-object-id"
+    },
+    {
+      "reason": "wrapped_key was produced from a different CEK",
+      "expected_error": "E_DECRYPTION_FAILED",
+      "expected": {
+        "wrapped_key": "127a36123533191866e538ecbb0d1a126b8110db70b7e21febe0ea51f6b89cad103c85d324af75d280c1fd93b5f826ff",
+        "recovers_different_cek": false
+      },
+      "_name": "hpke-object-key/negative-wrong-cek"
+    }
+  ]
+}

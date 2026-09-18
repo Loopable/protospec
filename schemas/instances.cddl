@@ -1,0 +1,19 @@
+; instances.cddl - instance document and operational keys
+; (spec/13-instances.md)
+
+; Instance document (spec 13.3.1). Signed by the instance root key over
+; "loopable-instance-document-v1" 0x00 || deterministic_cbor(without key 4).
+instance_document = {
+  0 => protocol_version,        ; protocol_version
+  1 => instance_id,             ; instance_id
+  2 => ed25519_public_key,      ; root_public_key
+  3 => [+ instance_op_key],     ; operational_keys (at least one)
+  4 => ed25519_signature,       ; signature
+}
+
+instance_op_key = {
+  0 => key_id,                  ; key_id
+  1 => ed25519_public_key,      ; public_key
+  2 => time,                    ; not_before
+  3 => time,                    ; not_after
+}

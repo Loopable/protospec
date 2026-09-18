@@ -1,0 +1,27 @@
+; devices.cddl - device authorization records
+; (spec/12-devices.md, spec/34-event-types.md, spec/22-signatures.md)
+
+; Device kind codes (spec/12.5). 0 client, 1 backup, 2 service.
+; A first-device authorization MUST NOT use kind 1 (backup), per spec 12.4.
+device_kind = 0..2
+
+; FirstDeviceAuthorization (spec/34.3). Carried in the ACCOUNT_CREATED body,
+; signed by the account identity key. The signature (key 6) is computed over
+; the label "loopable-first-device-authorization-v1" 0x00 followed by
+; deterministic_cbor of this map without key 6 (spec/22-signatures.md 22.9).
+first_device_authorization = {
+  0 => text,                  ; authorization_version ("0.1")
+  1 => account_id,            ; account_id
+  2 => device_id,             ; device_id (16 random bytes, spec 10.4)
+  3 => ed25519_public_key,    ; device_signing_public_key
+  4 => x25519_public_key,     ; device_encryption_public_key
+  5 => device_kind,           ; device_kind (!= 1)
+  6 => ed25519_signature,     ; identity_signature
+}
+
+; A device_summary used in account lookup responses (spec/60.8).
+device_summary = {
+  0 => device_id,             ; device_id
+  1 => bool,                  ; trusted
+  2 => device_kind,           ; kind
+}

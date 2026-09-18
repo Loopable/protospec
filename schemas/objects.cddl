@@ -1,0 +1,55 @@
+; objects.cddl - encrypted object envelope and recipient records
+; (spec/33-object-envelope.md, spec/24-hpke.md, spec/25-mls.md)
+
+object = {
+  0 => protocol_version,        ; protocol_version
+  1 => object_id,               ; object_id
+  2 => object_type,             ; object_type
+  3 => encryption_suite,        ; encryption_suite (0 for AES-256-GCM)
+  4 => version_id,              ; version_id (required in v0.1, authenticated via AAD)
+  5 => aes_gcm_nonce,           ; nonce
+  6 => aes_ciphertext_with_tag, ; ciphertext || tag
+  7 => [* recipient_key_record],; recipients
+  ? 8 => {* uint => any},       ; metadata (optional, unauthenticated, spec 33.6)
+}
+
+; There is no envelope-level key identifier. Recipient key material is
+; identified per recipient record by recipient_key_id (spec 24.6).
+;
+; envelope_id is derived after assembly and is NOT a wire field in version 0.1
+; (spec 33.3):
+;   envelope_id = SHA-256("loopable-object-envelope-v1" 0x00 ||
+;                         deterministic_cbor(complete object map))
+
+; Object type codes (spec/33-object-envelope.md section 33.7)
+object_type = 0..9
+
+; Encryption suite codes (spec/33-object-envelope.md)
+encryption_suite = 0
+
+; recipient_key_record (spec/24-hpke.md section 24.6)
+recipient_key_record = {
+  0 => recipient_kind,          ; 0 device, 1 MLS group
+  1 => recipient_account_id,    ; account_id (empty for MLS)
+  2 => recipient_device_id,     ; device_id (empty for MLS)
+  3 => recipient_key_id,        ; recipient public key id (spec 24.4)
+  4 => hpke_encapsulated_key,   ; encapsulated_key (empty for MLS)
+  5 => hpke_wrapped_key,        ; wrapped_key (empty for MLS)
+}
+
+recipient_kind = 0..1
+
+recipient_account_id = bytes .size 32 / bytes .size 0
+recipient_device_id  = bytes .size 16 / bytes .size 0
+
+; ObjectSecurityMetadata - the canonical map authenticated as AES-GCM AAD
+; (spec/23-encryption.md section 23.4). version_id (key 4) is always present in
+; protocol version 0.1. The AAD map is a separate authenticated structure: it
+; reuses envelope field numbers but is not the envelope itself.
+object_aad = {
+  0 => protocol_version,
+  1 => object_id,
+  2 => object_type,
+  3 => encryption_suite,
+  4 => version_id,
+}

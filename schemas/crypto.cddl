@@ -1,0 +1,20 @@
+; crypto.cddl - cryptographic material types (spec/20, spec/22, spec/23)
+
+ed25519_public_key = bytes .size 32
+ed25519_signature  = bytes .size 64
+x25519_public_key  = bytes .size 32
+x25519_private_key = bytes .size 32
+
+sha256_digest   = bytes .size 32
+aes_gcm_nonce   = bytes .size 12
+aes_gcm_tag     = bytes .size 16
+
+; AES-256-GCM ciphertext field: ciphertext followed by the 16-byte tag
+; (spec 23.3).
+aes_ciphertext_with_tag = bytes
+
+cek = bytes .size 32      ; content encryption key; never on the wire in plaintext
+
+; HPKE encapsulated key and ciphertext (spec/24-hpke.md)
+hpke_encapsulated_key = bytes
+hpke_wrapped_key      = bytes

@@ -1,0 +1,19 @@
+; identifiers.cddl - identifier wire forms (spec/10-identifiers.md)
+
+account_id       = bytes .size 32
+instance_id      = bytes .size 32
+event_id         = bytes .size 16
+object_id        = bytes .size 32
+device_id        = bytes .size 16
+request_id       = bytes .size 16
+key_id           = bytes .size 16   ; instance operational key identifier (spec 13)
+recipient_key_id = bytes .size 16   ; recipient key identifier (spec 24.4)
+version_id       = bytes .size 32
+group_id         = bytes .size 16
+
+; Derived identifiers (account_id, instance_id) - a validator MUST check the
+; derivation rule of spec 10.5 in addition to length.
+;
+; Derived identifiers (recipient_key_id, envelope_id) are recomputed from
+; their descriptors or envelopes and are not authority for security decisions
+; (spec 10.4, spec 24.4, spec 33.3).

@@ -1,0 +1,10 @@
+; common.cddl - shared primitive types for the Loopable Protocol 0.1 wire format
+; spec/31-wire-types.md
+
+time = uint                       ; epoch seconds, never a CBOR tag (spec 31.7)
+
+protocol_version = "0.1"          ; spec/81-versioning-and-capabilities.md
+
+; Canonical text form is base32lower without padding (spec 10.2).
+; Not used as a wire type for identifiers; listed here for completeness.
+base32text = text

@@ -1,0 +1,144 @@
+; events.cddl - event envelope and event bodies (spec/32-event-envelope.md, spec/34-event-types.md)
+
+; object_reference (spec 32.2)
+object_reference = {
+  0 => object_id,            ; object_id
+  ? 1 => version_id,         ; version_id (optional)
+}
+
+; The event envelope. The signature (key 9) is computed over the label
+; "loopable-event-v1" 0x00 followed by deterministic_cbor of this map without
+; key 9 (spec/22-signatures.md).
+event = {
+  0 => protocol_version,     ; protocol_version
+  1 => event_id,             ; event_id
+  2 => event_type,           ; event_type
+  3 => account_id,           ; account_id
+  4 => device_id_or_empty,   ; device_id (empty only for GENESIS, spec 34.3)
+  5 => time,                 ; created_at
+  6 => [* event_id],         ; predecessors, canonical order, no duplicates (spec 32.4)
+  7 => [* object_reference], ; object_references
+  8 => event_body,           ; body
+  9 => ed25519_signature,    ; signature
+}
+
+device_id_or_empty = device_id / bytes .size 0
+
+; Event type codes (spec/34-event-types.md). Types 0..24 are registered;
+; unknown codes are rejected (spec 82.3) except as allowed by spec 81.4.
+event_type = 0..24
+
+; The applicable member of this union is selected by the event_type value.
+event_body = event_body_account_created /
+             event_body_device_authorized /
+             event_body_device_revoked /
+             event_body_trust_device_transferred /
+             event_body_username_changed /
+             event_body_account_deleted /
+             event_body_relationship /
+             event_body_empty /
+             event_body_post_edited /
+             event_body_reply_created /
+             event_body_group_created /
+             event_body_group_deleted /
+             event_body_group_member_added /
+             event_body_group_epoch /
+             event_body_message_created
+
+; ACCOUNT_CREATED (0) - signed by the account identity key whose public key is
+; in field 0. account_id in the envelope MUST derive from it (spec 34.3).
+; The envelope device_id is empty for this event; the first device is carried
+; in first_device_authorization (key 3), defined in devices.cddl.
+event_body_account_created = {
+  0 => ed25519_public_key,        ; identity_public_key
+  1 => text,                      ; username (canonical, spec 11.6)
+  2 => instance_id,               ; home_instance
+  3 => first_device_authorization,; first_device_authorization (spec 34.3)
+}
+
+; DEVICE_AUTHORIZED (1)
+event_body_device_authorized = {
+  0 => device_id,            ; device_id
+  1 => ed25519_public_key,   ; signing_public_key
+  2 => x25519_public_key,    ; encryption_public_key
+  3 => device_kind,          ; device_kind
+  ? 4 => text,               ; display_name (optional)
+}
+
+; DEVICE_REVOKED (2)
+event_body_device_revoked = {
+  0 => device_id,            ; device_id
+  ? 1 => reason_code,        ; reason (optional)
+}
+
+; TRUSTED_DEVICE_TRANSFERRED (3)
+event_body_trust_device_transferred = {
+  0 => device_id,            ; new_trusted_device_id
+}
+
+; USERNAME_CHANGED (4)
+event_body_username_changed = {
+  0 => text,                 ; previous_username
+  1 => text,                 ; new_username
+}
+
+; ACCOUNT_DELETED (5)
+event_body_account_deleted = {
+  ? 0 => reason_code,        ; reason (optional)
+}
+
+; Relationship events (6..11): FOLLOW_CREATED, FOLLOW_REMOVED, BLOCK_CREATED,
+; BLOCK_REMOVED, MUTE_CREATED, MUTE_REMOVED (spec 34.9)
+event_body_relationship = {
+  0 => account_id,           ; target_account_id
+}
+
+; Content events with empty bodies: PROFILE_UPDATED (12), POST_CREATED (13),
+; POST_DELETED (15). The referenced object lives in envelope object_references.
+event_body_empty = {}
+
+; POST_EDITED (14)
+event_body_post_edited = {
+  0 => version_id,           ; previous_version_id
+}
+
+; REPLY_CREATED (16)
+event_body_reply_created = {
+  ? 0 => object_reference,   ; parent_reference (optional)
+}
+
+; GROUP_CREATED (17)
+event_body_group_created = {
+  0 => group_id,             ; group_id
+  ? 1 => object_reference,   ; name: reference to group_metadata (optional)
+}
+
+; GROUP_DELETED (18)
+event_body_group_deleted = {
+  0 => group_id,             ; group_id
+}
+
+; GROUP_MEMBER_ADDED (19); GROUP_MEMBER_REMOVED (20) has the same shape.
+event_body_group_member_added = {
+  0 => group_id,             ; group_id
+  1 => uint,                 ; epoch
+  2 => account_id,           ; member_account_id
+  ? 3 => member_device_id,   ; member_device_id (absent/empty = whole account)
+}
+
+member_device_id = device_id / bytes .size 0
+
+; GROUP_JOINED (21); GROUP_LEFT (22) and GROUP_UPDATED (23) have the same shape.
+event_body_group_epoch = {
+  0 => group_id,             ; group_id
+  1 => uint,                 ; epoch
+}
+
+; MESSAGE_CREATED (24)
+event_body_message_created = {
+  ? 0 => context_id,         ; context (optional)
+}
+
+context_id = bytes .size 16
+
+reason_code = 0..5           ; spec 34.12

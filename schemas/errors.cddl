@@ -1,0 +1,36 @@
+; errors.cddl - error object (spec/80-errors.md)
+
+error_object = {
+  0 => error_code,              ; error_code
+  1 => text,                    ; message (not protocol semantics)
+  ? 2 => request_id,            ; request_id (optional)
+  3 => bool,                    ; retryable
+  ? 4 => {* uint => any},       ; details (optional)
+}
+
+; Registered error codes (spec/80-errors.md section 80.2)
+error_code = "E_MALFORMED_ENCODING" /
+             "E_BAD_REQUEST" /
+             "E_EVENT_ID_COLLISION" /
+             "E_DECRYPTION_FAILED" /
+             "E_SIGNATURE_INVALID" /
+             "E_AUTH_MALFORMED" /
+             "E_AUTH_INVALID" /
+             "E_REPLAY" /
+             "E_TIMESTAMP_OUT_OF_RANGE" /
+             "E_UNAUTHORIZED_INSTANCE" /
+             "E_UNAUTHORIZED_DEVICE" /
+             "E_FIRST_DEVICE_INVALID" /
+             "E_MEMBER_REQUIRED" /
+             "E_OBJECT_NOT_AUTHORIZED" /
+             "E_NOT_FOUND" /
+             "E_USERNAME_UNAVAILABLE" /
+             "E_DAG_CYCLE" /
+             "E_DAG_UNROOTED" /
+             "E_MISSING_DEPENDENCY" /
+             "E_TRUST_CONFLICT" /
+             "E_MANDATORY_UNKNOWN" /
+             "E_UNSUPPORTED_VERSION" /
+             "E_UNSUPPORTED_CAPABILITY" /
+             "E_RATE_LIMITED" /
+             "E_INTERNAL"

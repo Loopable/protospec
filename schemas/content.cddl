@@ -1,0 +1,69 @@
+; content.cddl - plaintext content schemas (the encrypted payloads)
+; (spec/50-social-relationships.md, spec/51-profiles.md, spec/54-messaging.md,
+;  spec/55-content.md, spec/56-media-and-files.md, spec/53-contexts-and-membership.md)
+
+; Post content (spec 55.1)
+post_content = {
+  0 => text,                          ; text (may be empty)
+  ? 1 => [* object_reference],        ; attachments (optional)
+  ? 2 => text,                        ; created_locale (optional, BCP 47)
+}
+
+; Reply content (spec 55.1)
+reply_content = {
+  0 => object_reference,              ; parent
+  1 => text,                          ; text (may be empty)
+  ? 2 => [* object_reference],        ; attachments (optional)
+}
+
+; Direct message content (spec 54.1)
+direct_message_content = {
+  0 => text,                          ; text (may be empty)
+  ? 1 => [* object_reference],        ; attachments (optional)
+}
+
+; Profile content (spec 51.1)
+profile_content = {
+  ? 0 => text,                        ; display_name (optional)
+  ? 1 => text,                        ; biography (optional)
+  ? 2 => object_reference,            ; avatar (optional)
+  ? 3 => object_reference,            ; banner (optional)
+  ? 4 => text,                        ; site (optional)
+  ? 5 => {* uint => any},             ; extra (optional)
+}
+
+; Relationship content (spec 50.3)
+relationship_content = {
+  ? 0 => [* text],                    ; labels (optional)
+  ? 1 => text,                        ; annotation (optional)
+}
+
+; Media content (spec 56.1)
+media_content = {
+  0 => text,                          ; media_type (IANA MIME, lowercase)
+  1 => uint,                          ; byte_length
+  2 => sha256_digest,                 ; plaintext_sha256
+  ? 3 => text,                        ; filename (optional)
+  ? 4 => uint,                        ; width (optional)
+  ? 5 => uint,                        ; height (optional)
+  ? 6 => uint,                        ; duration_ms (optional)
+}
+
+; Notification content (spec 72.2)
+notification_content = {
+  0 => uint,                          ; kind (0..5)
+  1 => account_id,                    ; actor_account_id
+  ? 2 => object_reference,            ; reference (optional)
+  ? 3 => text,                        ; text (optional)
+}
+
+; Membership content (spec 53.5)
+membership_content = {
+  0 => account_id,                    ; member_account_id
+  ? 1 => uint,                        ; role (optional; 0 regular, 1 owner)
+}
+
+; Group metadata content (spec 53.6)
+group_metadata_content = {
+  0 => text,                          ; name
+}

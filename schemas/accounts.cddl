@@ -1,0 +1,14 @@
+; accounts.cddl - account lookup response (spec/60-federation.md section 60.8)
+
+account_lookup_response = {
+  0 => account_id,              ; account_id
+  1 => ed25519_public_key,      ; identity_public_key
+  2 => text,                    ; handle (canonical, spec 11.5)
+  3 => instance_id,             ; home_instance
+  4 => [* device_summary],      ; device_summary (max 16 entries, spec 82.1)
+  5 => account_state,           ; state
+}
+
+account_state = 0..1            ; 0 active, 1 deleted
+
+; device_summary is defined in devices.cddl.

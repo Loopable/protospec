@@ -1,0 +1,69 @@
+{
+  "vectors": [
+    {
+      "inputs": {
+        "protocol_version": "0.1",
+        "object_id": "c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c7",
+        "object_type": 0,
+        "encryption_suite": 0,
+        "version_id": "21039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "cek": "e599224a23517c0977d39e53e68af107e87350cd70e7cb6270c392a23b0b7aa8",
+        "nonce": "d60a203813029530c85b29fa",
+        "plaintext_cbor": "a1007048656c6c6f2066726f6d20416c696365"
+      },
+      "intermediates": {
+        "object_security_metadata_cbor": "a50063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c70200030004582021039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "aad": "6c6f6f7061626c652d6f626a6563742d763100a50063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c70200030004582021039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d"
+      },
+      "expected": {
+        "ciphertext_with_tag": "f5d33e9c709c863f7ba8e01f5b862e1d77ab1f0d1b2de4fd98284fd0e6d4b0b7596800",
+        "object_envelope_cbor": "a80063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c70200030004582021039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d054cd60a203813029530c85b29fa065823f5d33e9c709c863f7ba8e01f5b862e1d77ab1f0d1b2de4fd98284fd0e6d4b0b75968000781a6000001582027e7acb660775d4d2c6677ac5714195fd272c572dc27eb113928bd0bc85f2f3f025058e8f835751254e3df53a29ceb9b6fc90350adc90717c7e3da680e9a8a081547503f045820796029bc59081407aa41a4200ea7081c922fec82a19934a1ed4409f1b5aad606055830922612b04ffcaa68ff116396dc986bc891f9b35d7f34774c316c011b011f39a4e985d4d6f18fa6c38c71a0a7e6ce3244",
+        "envelope_id": "642b4a431e3227e7690f8179a5ed0f8cd167399cfb5eb557bd0d279ad66bcce4"
+      },
+      "checks": {
+        "decrypt_recovers_plaintext": true
+      },
+      "_name": "object-encryption-aad/valid"
+    },
+    {
+      "reason": "object_id differs from the one used to encrypt",
+      "expected_error": "E_DECRYPTION_FAILED",
+      "expected": {
+        "object_security_metadata_cbor": "a50063302e3101582121c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c70200030004582021039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "aad": "6c6f6f7061626c652d6f626a6563742d763100a50063302e3101582121c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c70200030004582021039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "rejects": true
+      },
+      "_name": "object-encryption-aad/negative-1"
+    },
+    {
+      "reason": "object_type differs from the one used to encrypt",
+      "expected_error": "E_DECRYPTION_FAILED",
+      "expected": {
+        "object_security_metadata_cbor": "a50063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c70201030004582021039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "aad": "6c6f6f7061626c652d6f626a6563742d763100a50063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c70201030004582021039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "rejects": true
+      },
+      "_name": "object-encryption-aad/negative-2"
+    },
+    {
+      "reason": "version_id differs from the one used to encrypt",
+      "expected_error": "E_DECRYPTION_FAILED",
+      "expected": {
+        "object_security_metadata_cbor": "a50063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c7020003000458212121039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "aad": "6c6f6f7061626c652d6f626a6563742d763100a50063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c7020003000458212121039195638b86f373f015a004ab267db218cc00af0fa10cb0fe5ad7d392478d",
+        "rejects": true
+      },
+      "_name": "object-encryption-aad/negative-4"
+    },
+    {
+      "reason": "AAD built without version_id (not valid in v0.1) does not authenticate the ciphertext",
+      "expected_error": "E_DECRYPTION_FAILED",
+      "expected": {
+        "object_security_metadata_cbor": "a40063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c702000300",
+        "aad": "6c6f6f7061626c652d6f626a6563742d763100a40063302e31015820c67b7f1f8ba4b1f16555fc69057d1bcb9abad77454944c8387ef5dc95d6d74c702000300",
+        "rejects": true
+      },
+      "_name": "object-encryption-aad/negative-omitted-version-id"
+    }
+  ]
+}

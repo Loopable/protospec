@@ -1,0 +1,50 @@
+; federation.cddl - federation endpoint request and response bodies
+; (spec/60-federation.md, spec/62-synchronization.md)
+
+; Event submission (spec 60.4) and object submission (spec 60.5) bodies and
+; responses.
+
+submit_events_request = [* event]
+submit_objects_request = [* object]
+
+submit_result = {
+  0 => event_id / object_id,    ; event_id or object_id
+  1 => submit_status,           ; 0 accepted, 1 duplicate, 2 rejected
+  ? 2 => error_object,          ; present when status = 2
+}
+
+submit_status = 0..2
+
+; Batch missing-event fetch (spec 60.6)
+fetch_events_request = {
+  0 => [* event_id],            ; event_ids
+}
+
+; Exactly one of key 1 (found) or key 2 (not found / invalid) is present.
+fetch_event_result = {
+  0 => event_id,                ; event_id
+  ? 1 => bytes,                 ; event (canonical bytes)
+  ? 2 => error_object,          ; error
+}
+
+; Sync (spec/62-synchronization.md section 62.2)
+sync_request = {
+  ? 0 => bytes,                 ; cursor (absent = from the beginning)
+  ? 1 => [* uint],              ; interest (absent = all registered types)
+}
+
+sync_page = {
+  0 => bytes,                   ; cursor
+  1 => [* event],               ; events
+  2 => [* object],              ; objects
+  3 => bool,                    ; more
+}
+
+; Capabilities (spec/81-versioning-and-capabilities.md)
+capability = {
+  0 => text,                    ; id
+  1 => text,                    ; version
+  2 => bool,                    ; mandatory
+}
+
+capabilities_response = [* capability]
