@@ -24,6 +24,28 @@ Events
 
 The account identity key signs only `GENESIS`-level events. The trusted device signs account- and device-level events and all other authority-bearing events. Ordinary authorized devices sign content, relationship, message, and membership events.
 
+### 42.1.1 The trusted-device rule
+
+The whole authority model reduces to one rule: after genesis, all account-management authority flows through the account's single trusted device.
+
+```text
+Account identity key
+        |
+        | authorizes exactly one initial trusted device (in ACCOUNT_CREATED)
+        v
+Initial trusted device
+        |
+        | becomes the account's ongoing operational authority
+        v
+Trusted device
+        |
+        | authorizes all future account-management operations
+        v
+DEVICE_AUTHORIZED / TRUSTED_DEVICE_TRANSFERRED / DEVICE_REVOKED / USERNAME_CHANGED / ACCOUNT_DELETED
+```
+
+The account identity key is used only once, to create the account. From then on, the trusted device is the operational authority for the account: only the current trusted device may sign `GENESIS`-exempt account-management events (`TRUSTED` level, `34.1`), and only it may name the next trusted device (`TRUSTED_DEVICE_TRANSFERRED`). No other device, and not the account identity key, can authorize, revoke, or transfer device authority. A device that is not currently trusted can never sign a `TRUSTED`-level event, even if it is otherwise authorized.
+
 ## 42.2 The authorization index
 
 A validator computes the authorization index of an account from the account's event DAG. The index records, for each device:

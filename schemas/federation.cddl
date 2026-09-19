@@ -5,7 +5,31 @@
 ; responses.
 
 submit_events_request = [* event]
-submit_objects_request = [* object]
+submit_objects_request = [* object_submission]
+
+object_submission = object / media_upload_submission
+
+; Account-authenticated media creation only. The wrapped envelope has suite 1,
+; object_type 3, and empty ciphertext; the instance binds the finalized
+; upload's bytes into ciphertext before storing the complete object.
+media_upload_submission = {
+  0 => media_upload_object,     ; object envelope with empty ciphertext
+  1 => upload_id,               ; finalized upload resource token
+}
+
+media_upload_object = {
+  0 => protocol_version,        ; protocol_version
+  1 => object_id,               ; object_id
+  2 => 3,                       ; object_type media
+  3 => 1,                       ; streaming media encryption
+  4 => version_id,              ; version_id
+  5 => bytes .size 0,           ; nonce empty for suite 1
+  6 => bytes .size 0,           ; transient: bound from upload before storage
+  7 => [* recipient_key_record],; recipients
+  ? 8 => {* uint => any},       ; metadata, per spec 33.6
+}
+
+upload_id = base32text
 
 submit_result = {
   0 => event_id / object_id,    ; event_id or object_id

@@ -35,3 +35,4 @@ A `blocking` decision is a foundational contradiction that the specification cou
 | 0015 | Public profiles are a user-elected plaintext lookup card | accepted |
 | 0016 | Blocking is asymmetric and social-graph mutes are removed | accepted |
 | 0017 | Instance metadata is public and moderation is instance-local | accepted |
+| 0018 | Media ciphertext is uploaded then bound to the object envelope | accepted |

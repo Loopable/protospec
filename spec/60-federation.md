@@ -42,7 +42,7 @@ All endpoints below are rooted at `/v1`. Bodies are CBOR with `Content-Type: app
 | `PATCH /v1/media/uploads/{upload_id}` | Append ciphertext bytes to a resumable media upload (tus), per `35.10`. |
 | `HEAD /v1/media/uploads/{upload_id}` | Query resumable media upload offset and status (tus), per `35.10`. |
 
-Path-embedded identifiers are the base32lower text form, per `10-identifiers.md`. An identifier in a URL MUST be verified to decode to the expected byte length.
+Path-embedded protocol identifiers are the base32lower text form, per `10-identifiers.md`. An identifier in a URL MUST be verified to decode to the expected byte length. The tus `upload_id` path component is an opaque upload resource token, per `35.10`.
 
 ### Endpoint reference
 
@@ -56,7 +56,7 @@ Each endpoint's authentication, rate group, body limit, idempotency, and primary
 | `POST /v1/events` | Instance or account | `events` | 8 MiB | dedup by `event_id` (`62.4`) | `E_SIGNATURE_INVALID`, `E_DAG_CYCLE`, `E_DAG_UNROOTED`, `E_MISSING_DEPENDENCY`, `E_MANDATORY_UNKNOWN`, `E_RATE_LIMITED` |
 | `GET /v1/events/{event_id}` | Instance or account | `events` | none | read-only | `E_NOT_FOUND` |
 | `POST /v1/events:fetch` | Instance or account | `fetch` | 8 MiB | per-`event_id` | per-record `E_NOT_FOUND` |
-| `POST /v1/objects` | Instance or account | `objects` | 8 MiB; media blobs exempt (`35.10`) | dedup by `object_id` (`60.5`) | `E_BAD_REQUEST`, `E_MANDATORY_UNKNOWN`, `E_RATE_LIMITED` |
+| `POST /v1/objects` | Instance or account | `objects` | 8 MiB | dedup by `object_id` (`60.5`) | `E_BAD_REQUEST`, `E_MANDATORY_UNKNOWN`, `E_RATE_LIMITED` |
 | `GET /v1/objects/{object_id}` | Instance or account; object authorization (`33.5`) | `objects` | none; range responses bounded per media object | read-only | `E_NOT_FOUND`, `E_OBJECT_NOT_AUTHORIZED` |
 | `POST /v1/sync` | Instance or account | `events` | 8 MiB per page | cursor-stable resume (`62.5`) | `E_MANDATORY_UNKNOWN`, `E_RATE_LIMITED` |
 | `GET /v1/accounts/{account_id}` | Public for public profiles; member otherwise (`13.6`) | `lookup` | none | read-only | `E_NOT_FOUND`, `E_MEMBER_REQUIRED` |
@@ -80,7 +80,11 @@ Submitting events that the sender is not authorized to relay is subject to the s
 
 ## 60.5 Object submission
 
-`POST /v1/objects` accepts a CBOR array of encrypted objects with the same response shape as `60.4` (`object_id` instead of `event_id`). A receiving instance MUST NOT decrypt objects; it verifies the envelope structure, keys, and authenticated metadata per `33-object-envelope.md`, then stores or forwards per `65-object-storage.md`. Unreadable ciphertext is never a protocol error, per `33.9`.
+`POST /v1/objects` accepts a CBOR array of object submissions with the same response shape as `60.4` (`object_id` instead of `event_id`). An object submission is either a complete encrypted object envelope or, for account-authenticated media creation only, a `media_upload_submission` wrapper defined in `35.10`. A receiving instance MUST NOT decrypt objects; it verifies the envelope structure, keys, and authenticated metadata per `33-object-envelope.md`, then stores or forwards per `65-object-storage.md`. Unreadable ciphertext is never a protocol error, per `33.9`.
+
+For account-authenticated media creation, `media_upload_submission` carries a media envelope with `ciphertext` empty and an `upload_id` naming a finalized upload owned by the submitting account. The receiving instance MUST bind that upload's bytes as `ciphertext` before storing. A `media_upload_submission` on an instance-authenticated request MUST be rejected (`E_BAD_REQUEST`), because uploads are account-local and not federated.
+
+For instance-authenticated relay, replication, and synchronization, a media submission MUST be the complete object envelope with the full stream blob in `ciphertext`. A complete media object remains valid on `POST /v1/objects`; the resumable upload wrapper is only the account-to-home-instance creation path.
 
 ## 60.6 Retrieval
 

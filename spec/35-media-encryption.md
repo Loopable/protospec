@@ -131,22 +131,43 @@ All other envelope behavior is unchanged (`33-object-envelope.md`): the AAD of `
 
 `encryption_suite` is chosen when producing the plaintext. Media objects MUST use suite `1`; all other object types MUST use suite `0`. An envelope whose `encryption_suite` does not match its object type is invalid (`E_BAD_REQUEST`).
 
-## 35.10 Resumable upload
+## 35.10 Resumable upload and upload-to-object binding
 
-Media blobs can be large. Instances MUST support resumable upload of media ciphertext blobs using the tus resumable upload protocol, version 1.0.0 (`https://tus.io`). The uploaded bytes are exactly the envelope `ciphertext` field value described above; the upload length is `len(blob)`.
+Media blobs can be large: up to 2 GiB of plaintext (`82.1`). When an account creates a media object at its own instance, the ciphertext blob is delivered through the resumable upload endpoints and bound to the media object envelope at the storage instance. It is never carried inside an account-authenticated object-creation request body, so the request body limit of `82.1` applies to media object submissions like any other object.
+
+Instances MUST support resumable upload of media ciphertext blobs using the tus resumable upload protocol, version 1.0.0 (`https://tus.io`). The uploaded bytes are exactly the envelope `ciphertext` field value for the media object; the upload length is `len(blob)`. Upload and binding follow the sequence:
+
+```text
+create resumable upload
+        |
+        v
+upload ciphertext chunks
+        |
+        v
+finalize upload
+        |
+        v
+bind upload to object
+        |
+        v
+federate object / reference
+```
 
 The resumable upload endpoint group at `/v1/media/uploads*` is registered in `60.3`. The upload resource is transient: it is not an object, is not federated, and is not visible to other instances. An instance stores the blob only until it is bound to an object envelope as described below, or until the resource expires.
 
-The client flow is:
+An `upload_id` is an opaque resource token for one finalized upload. It MUST contain at least 128 bits from a cryptographically secure random source (`20.11`), MUST be encoded as base32lower without padding when used in a path, and MUST NOT be used as cryptographic authority.
 
 1. Create the media blob locally (metadata stripping per `56.3`, encryption per this module), using the account's own instance as the upload target.
-2. Upload the blob to `POST /v1/media/uploads` with `Upload-Length` set to `len(blob)`, and upload bytes with `PATCH` as tus specifies (`creation`, `creation-with-upload`, and single-URI chunking are sufficient; `concat` is not required).
-3. Assemble the media object envelope in memory with the blob as its `ciphertext` value.
-4. Submit the envelope to `POST /v1/objects` (60.5).
+2. Create the upload with `POST /v1/media/uploads`, setting `Upload-Length` to `len(blob)`. The response identifies the upload resource with an `upload_id`.
+3. Upload the blob with `PATCH /v1/media/uploads/{upload_id}` as tus specifies (`creation`, `creation-with-upload`, and single-URI chunking are sufficient; `concat` is not required). The upload is finalized when the stored byte count reaches `Upload-Length`.
+4. Bind the upload to the object: submit a `media_upload_submission` to `POST /v1/objects` (`60.5`). The submission contains the media object envelope with `ciphertext` empty and a separate `upload_id` field naming the finalized upload. The receiving instance MUST verify that the referenced upload exists, is finalized, and was created by the submitting account; MUST then bind the upload's bytes as the envelope `ciphertext`; and MUST reject the submission (`E_BAD_REQUEST`) otherwise. After binding, the instance stores, synchronizes, and federates the complete object envelope.
+5. Federate the object or its reference: the bound envelope is the authoritative protocol object. Peers submit and retrieve it through the normal object paths of `60.5`, `60.6`, and `35.11`, including byte ranges. Federation, storage, and recipient key wrapping do not change.
 
-The instance receiving the envelope MAY bind the stored blob from a completed upload identified by `metadata` (`33.6`) rather than stream the bytes a second time; the envelope remains the authoritative protocol object and the submission must still carry complete and valid envelope fields. Instances MUST NOT accept a media envelope that references an unreachable or unfinished upload. Resumable upload is a transport optimization; the interop contract is the envelope.
+Account-authenticated media creation MUST use `media_upload_submission`; the media blob travels as an upload, and the object submission carries the binding. Instance-authenticated relay and replication MUST use the complete object envelope with the full stream blob in `ciphertext`.
 
-Media blobs transferred by this endpoint are excluded from the 8 MiB request body limit (`82.1`) and are bounded instead by the media plaintext limit.
+`media_upload_submission` is a transient transport wrapper. It is not an object envelope, is not stored, is not federated, and is not an input to `envelope_id` (`33.3`). `envelope_id` is computed only after the upload bytes have been bound into `ciphertext`.
+
+The account-scope and finalization checks above are the storage-side safeguards for the transient upload binding. Tampering with `upload_id` can only cause a failed binding or a bound blob that fails decryption for intended recipients. It cannot substitute attacker-chosen plaintext, because the blob and the stream authenticate under the CEK the envelope wraps, and the attacker does not hold that CEK.
 
 ## 35.11 Retrieval and byte ranges
 

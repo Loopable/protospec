@@ -3,7 +3,8 @@
 // Deterministic generator for the reference vectors covering identifier
 // derivation, canonical CBOR, event signatures, device authorization, account
 // and instance authorization records, relationship events, federation request
-// signing, streaming media encryption, and username grammar.
+// signing, streaming media encryption, username grammar, and event dependency
+// validation with causal authorization.
 //
 // Run:  node test-vectors/generate.mjs
 // Output: test-vectors/*.json
@@ -1834,6 +1835,484 @@ function fix11() {
 }
 
 // ---------------------------------------------------------------------------
+// Fix 12 - event dependency validation and causal authorization (spec/63, 42.3)
+// ---------------------------------------------------------------------------
+
+function sortedPreds(...ids) {
+  return ids.sort((a, b) => Buffer.compare(a, b));
+}
+
+function fix12() {
+  const identityKey = ed25519FromSeed(seed("dep-identity"));
+  const deviceA = ed25519FromSeed(seed("dep-device-a"));
+  const deviceAEnc = x25519FromSeed(seed("dep-device-a-enc"));
+  const deviceAId = seed("dep-device-a-id").subarray(0, 16);
+  const deviceB = ed25519FromSeed(seed("dep-device-b"));
+  const deviceBEnc = x25519FromSeed(seed("dep-device-b-enc"));
+  const deviceBId = seed("dep-device-b-id").subarray(0, 16);
+  const deviceC = ed25519FromSeed(seed("dep-device-c"));
+  const deviceCEnc = x25519FromSeed(seed("dep-device-c-enc"));
+  const deviceCId = seed("dep-device-c-id").subarray(0, 16);
+  const deviceD = ed25519FromSeed(seed("dep-device-d"));
+  const deviceDEnc = x25519FromSeed(seed("dep-device-d-enc"));
+  const deviceDId = seed("dep-device-d-id").subarray(0, 16);
+  const accountId = sha256("loopable-account-id\x00", identityKey.pub);
+  const instanceId = sha256("loopable-instance-id\x00", ed25519FromSeed(seed("instance-root")).pub);
+  const created = 1759634000;
+
+  // Another account, used for the cross-account predecessor negative.
+  const otherIdentity = ed25519FromSeed(seed("dep-other-identity"));
+  const otherAccountId = sha256("loopable-account-id\x00", otherIdentity.pub);
+  const otherDevice = ed25519FromSeed(seed("dep-other-device"));
+  const otherDeviceEnc = x25519FromSeed(seed("dep-other-device-enc"));
+  const otherDeviceId = seed("dep-other-device-id").subarray(0, 16);
+
+  const makeFda = (id, signing, encryption) => {
+    const fda = encMap([
+      [0, encText("0.1")],
+      [1, encBytes(accountId)],
+      [2, encBytes(id)],
+      [3, encBytes(signing.pub)],
+      [4, encBytes(encryption.pub)],
+      [5, encUint(0)],
+    ]);
+    const sig = sign(identityKey.priv, concat("loopable-first-device-authorization-v1\x00", fda));
+    return encMap([
+      [0, encText("0.1")],
+      [1, encBytes(accountId)],
+      [2, encBytes(id)],
+      [3, encBytes(signing.pub)],
+      [4, encBytes(encryption.pub)],
+      [5, encUint(0)],
+      [6, encBytes(sig)],
+    ]);
+  };
+
+  const e0Id = seed("dep-e0").subarray(0, 16);
+  const e0 = buildEvent({
+    eventId: e0Id,
+    eventType: 0,
+    accountId,
+    deviceId: Buffer.alloc(0),
+    createdAt: created,
+    predecessors: [],
+    objectRefs: [],
+    body: encMap([
+      [0, encBytes(identityKey.pub)],
+      [1, encText("deps")],
+      [2, encBytes(instanceId)],
+      [3, makeFda(deviceAId, deviceA, deviceAEnc)],
+    ]),
+    signer: identityKey.priv,
+  });
+
+  // DEVICE_AUTHORIZED of deviceB by the trusted deviceA.
+  const e1Id = seed("dep-e1").subarray(0, 16);
+  const e1 = buildEvent({
+    eventId: e1Id,
+    eventType: 1,
+    accountId,
+    deviceId: deviceAId,
+    createdAt: created,
+    predecessors: sortedPreds(e0Id),
+    objectRefs: [],
+    body: encMap([
+      [0, encBytes(deviceBId)],
+      [1, encBytes(deviceB.pub)],
+      [2, encBytes(deviceBEnc.pub)],
+      [3, encUint(0)],
+    ]),
+    signer: deviceA.priv,
+  });
+
+  // A concurrent pair: POST_CREATED by deviceB and DEVICE_REVOKED of
+  // deviceB, neither an ancestor of the other. The post remains valid (42.3).
+  const postObjId = seed("dep-post-object");
+  const postVerId = seed("dep-post-version");
+  const postRef = encMap([
+    [0, encBytes(postObjId)],
+    [1, encBytes(postVerId)],
+  ]);
+  const e2Id = seed("dep-e2").subarray(0, 16);
+  const e2 = buildEvent({
+    eventId: e2Id,
+    eventType: 13,
+    accountId,
+    deviceId: deviceBId,
+    createdAt: created + 1,
+    predecessors: sortedPreds(e0Id, e1Id),
+    objectRefs: [postRef],
+    body: encMap([]),
+    signer: deviceB.priv,
+  });
+  const e3Id = seed("dep-e3").subarray(0, 16);
+  const e3 = buildEvent({
+    eventId: e3Id,
+    eventType: 2,
+    accountId,
+    deviceId: deviceAId,
+    createdAt: created + 1,
+    predecessors: sortedPreds(e0Id, e1Id),
+    objectRefs: [],
+    body: encMap([[0, encBytes(deviceBId)]]),
+    signer: deviceA.priv,
+  });
+
+  // After e3, a POST_CREATED by deviceB that causally follows the revoke is
+  // unauthorized (42.3, 42.4).
+  const e4Id = seed("dep-e4").subarray(0, 16);
+  const e4 = buildEvent({
+    eventId: e4Id,
+    eventType: 13,
+    accountId,
+    deviceId: deviceBId,
+    createdAt: created + 2,
+    predecessors: sortedPreds(e0Id, e1Id, e3Id),
+    objectRefs: [postRef],
+    body: encMap([]),
+    signer: deviceB.priv,
+  });
+
+  // Missing dependency: references a predecessor ID the instance has never
+  // seen.
+  const unknownDep = seed("dep-unknown").subarray(0, 16);
+  const e5Id = seed("dep-e5").subarray(0, 16);
+  const e5 = buildEvent({
+    eventId: e5Id,
+    eventType: 6,
+    accountId,
+    deviceId: deviceBId,
+    createdAt: created + 3,
+    predecessors: sortedPreds(unknownDep),
+    objectRefs: [],
+    body: encMap([[0, encBytes(otherAccountId)]]),
+    signer: deviceB.priv,
+  });
+
+  // Mutual cycle: a references b and b references a.
+  const cycAId = seed("dep-cyc-a").subarray(0, 16);
+  const cycBId = seed("dep-cyc-b").subarray(0, 16);
+  const cycA = buildEvent({
+    eventId: cycAId,
+    eventType: 6,
+    accountId,
+    deviceId: deviceBId,
+    createdAt: created + 4,
+    predecessors: sortedPreds(cycBId),
+    objectRefs: [],
+    body: encMap([[0, encBytes(otherAccountId)]]),
+    signer: deviceB.priv,
+  });
+  const cycB = buildEvent({
+    eventId: cycBId,
+    eventType: 6,
+    accountId,
+    deviceId: deviceBId,
+    createdAt: created + 4,
+    predecessors: sortedPreds(cycAId),
+    objectRefs: [],
+    body: encMap([[0, encBytes(otherAccountId)]]),
+    signer: deviceB.priv,
+  });
+
+  // Unrooted: a POST_CREATED with no predecessors; nothing traces to the
+  // account's ACCOUNT_CREATED.
+  const e6Id = seed("dep-e6").subarray(0, 16);
+  const e6 = buildEvent({
+    eventId: e6Id,
+    eventType: 13,
+    accountId,
+    deviceId: deviceBId,
+    createdAt: created + 5,
+    predecessors: [],
+    objectRefs: [postRef],
+    body: encMap([]),
+    signer: deviceB.priv,
+  });
+
+  // Cross-account predecessor: references the other account's genesis.
+  const otherE0Id = seed("dep-other-e0").subarray(0, 16);
+  const otherFda = encMap([
+    [0, encText("0.1")],
+    [1, encBytes(otherAccountId)],
+    [2, encBytes(otherDeviceId)],
+    [3, encBytes(otherDevice.pub)],
+    [4, encBytes(otherDeviceEnc.pub)],
+    [5, encUint(0)],
+    [6, encBytes(sign(otherIdentity.priv, concat("loopable-first-device-authorization-v1\x00", encMap([
+      [0, encText("0.1")],
+      [1, encBytes(otherAccountId)],
+      [2, encBytes(otherDeviceId)],
+      [3, encBytes(otherDevice.pub)],
+      [4, encBytes(otherDeviceEnc.pub)],
+      [5, encUint(0)],
+    ]))))],
+  ]);
+  const otherE0Valid = buildEvent({
+    eventId: otherE0Id,
+    eventType: 0,
+    accountId: otherAccountId,
+    deviceId: Buffer.alloc(0),
+    createdAt: created,
+    predecessors: [],
+    objectRefs: [],
+    body: encMap([
+      [0, encBytes(otherIdentity.pub)],
+      [1, encText("other")],
+      [2, encBytes(instanceId)],
+      [3, otherFda],
+    ]),
+    signer: otherIdentity.priv,
+  });
+
+  const e7Id = seed("dep-e7").subarray(0, 16);
+  const e7 = buildEvent({
+    eventId: e7Id,
+    eventType: 6,
+    accountId,
+    deviceId: deviceBId,
+    createdAt: created + 6,
+    predecessors: sortedPreds(otherE0Id),
+    objectRefs: [],
+    body: encMap([[0, encBytes(otherAccountId)]]),
+    signer: deviceB.priv,
+  });
+
+  // Event-id collision: same id as e1, different bytes.
+  const e8 = buildEvent({
+    eventId: e1Id,
+    eventType: 1,
+    accountId,
+    deviceId: deviceAId,
+    createdAt: created + 7,
+    predecessors: sortedPreds(e0Id),
+    objectRefs: [],
+    body: encMap([]),
+    signer: deviceA.priv,
+  });
+
+  // Ambiguous trusted device: two concurrent TRUSTED_DEVICE_TRANSFERRED events
+  // (t1 and t2), then a TRUSTED-level event whose predecessors include both.
+  // 42.3 requires E_TRUST_CONFLICT.
+  const e9Id = seed("dep-e9").subarray(0, 16);
+  const e9 = buildEvent({
+    eventId: e9Id,
+    eventType: 1,
+    accountId,
+    deviceId: deviceAId,
+    createdAt: created + 8,
+    predecessors: sortedPreds(e0Id),
+    objectRefs: [],
+    body: encMap([
+      [0, encBytes(deviceCId)],
+      [1, encBytes(deviceC.pub)],
+      [2, encBytes(deviceCEnc.pub)],
+      [3, encUint(0)],
+    ]),
+    signer: deviceA.priv,
+  });
+  const t1Preds = sortedPreds(e0Id, e1Id, e9Id);
+  const t1Id = seed("dep-t1").subarray(0, 16);
+  const t1 = buildEvent({
+    eventId: t1Id,
+    eventType: 3,
+    accountId,
+    deviceId: deviceAId,
+    createdAt: created + 9,
+    predecessors: t1Preds,
+    objectRefs: [],
+    body: encMap([[0, encBytes(deviceBId)]]),
+    signer: deviceA.priv,
+  });
+  const t2Preds = sortedPreds(e0Id, e1Id, e9Id);
+  const t2Id = seed("dep-t2").subarray(0, 16);
+  const t2 = buildEvent({
+    eventId: t2Id,
+    eventType: 3,
+    accountId,
+    deviceId: deviceAId,
+    createdAt: created + 9,
+    predecessors: t2Preds,
+    objectRefs: [],
+    body: encMap([[0, encBytes(deviceCId)]]),
+    signer: deviceA.priv,
+  });
+  const e10Id = seed("dep-e10").subarray(0, 16);
+  const e10 = buildEvent({
+    eventId: e10Id,
+    eventType: 1,
+    accountId,
+    deviceId: deviceAId,
+    createdAt: created + 10,
+    predecessors: sortedPreds(e0Id, e1Id, e9Id, t1Id, t2Id),
+    objectRefs: [],
+    body: encMap([
+      [0, encBytes(deviceDId)],
+      [1, encBytes(deviceD.pub)],
+      [2, encBytes(deviceDEnc.pub)],
+      [3, encUint(0)],
+    ]),
+    signer: deviceA.priv,
+  });
+
+  const positives = [
+    section(
+      {
+        inputs: {
+          genesis_event_id: hex(e0Id),
+          device_a_authorized_event_id: hex(e1Id),
+          post_created_event_id: hex(e2Id),
+          post_object_id: hex(postObjId),
+          post_version_id: hex(postVerId),
+        },
+        expected: {
+          genesis_envelope_cbor: hex(e0.envelope),
+          device_auth_envelope_cbor: hex(e1.envelope),
+          post_created_envelope_cbor: hex(e2.envelope),
+        },
+        checks: {
+          genesis_signature_verifies: verify(identityKey.priv, e0.signatureInput, e0.signature),
+          device_auth_signature_verifies: verify(deviceA.priv, e1.signatureInput, e1.signature),
+          post_created_signature_verifies: verify(deviceB.priv, e2.signatureInput, e2.signature),
+          predecessors_known: sortedPreds(e0Id, e1Id).every((p) => [e0Id, e1Id].includes(p)),
+          status: "VALIDATED -> APPLIED",
+        },
+      },
+      "event-dependencies/valid-chain-applied"
+    ),
+    section(
+      {
+        inputs: {
+          post_created_event_id: hex(e2Id),
+          device_b_revoked_event_id: hex(e3Id),
+        },
+        expected: {
+          post_created_envelope_cbor: hex(e2.envelope),
+          device_revoked_envelope_cbor: hex(e3.envelope),
+        },
+        checks: {
+          post_signature_verifies: verify(deviceB.priv, e2.signatureInput, e2.signature),
+          revoke_signature_verifies: verify(deviceA.priv, e3.signatureInput, e3.signature),
+          revoke_is_concurrent_with_post: !sortedPreds(e0Id, e1Id, e3Id).includes(e2Id),
+          post_remains_valid_despite_concurrent_revoke: true,
+          both_accepted: true,
+        },
+      },
+      "event-dependencies/concurrent-events-both-accepted"
+    ),
+    section(
+      {
+        inputs: {
+          resubmitted_event_id: hex(e1Id),
+        },
+        expected: {
+          device_auth_envelope_cbor: hex(e1.envelope),
+        },
+        checks: {
+          signature_verifies: verify(deviceA.priv, e1.signatureInput, e1.signature),
+          resubmission_status: "duplicate",
+          no_second_state_transition: true,
+        },
+      },
+      "event-dependencies/duplicate-submission-idempotent"
+    ),
+  ];
+
+  const negatives = [
+    section(
+      {
+        reason: "event references a predecessor the instance has never seen (63.3)",
+        expected_error: "E_MISSING_DEPENDENCY",
+        expected: {
+          event_envelope_cbor: hex(e5.envelope),
+          event_signature: hex(e5.signature),
+          pending_state: "PENDING",
+          details_missing: [hex(unknownDep)],
+        },
+        checks: {
+          signature_still_cryptographically_valid: verify(deviceB.priv, e5.signatureInput, e5.signature),
+        },
+      },
+      "event-dependencies/negative-missing-dependency-pending"
+    ),
+    section(
+      {
+        reason: "two events reference each other; the graph is cyclic (63.1)",
+        expected_error: "E_DAG_CYCLE",
+        expected: {
+          cycle_a_envelope_cbor: hex(cycA.envelope),
+          cycle_b_envelope_cbor: hex(cycB.envelope),
+        },
+        checks: {
+          cycle_a_signature_valid: verify(deviceB.priv, cycA.signatureInput, cycA.signature),
+          cycle_b_signature_valid: verify(deviceB.priv, cycB.signatureInput, cycB.signature),
+        },
+      },
+      "event-dependencies/negative-mutual-cycle"
+    ),
+    section(
+      {
+        reason: "a non-genesis event with no predecessors cannot trace to its ACCOUNT_CREATED (63.2)",
+        expected_error: "E_DAG_UNROOTED",
+        expected: { event_envelope_cbor: hex(e6.envelope) },
+        checks: {
+          signature_verifies: verify(deviceB.priv, e6.signatureInput, e6.signature),
+          account_has_genesis_devices: true,
+        },
+      },
+      "event-dependencies/negative-unrooted-event"
+    ),
+    section(
+      {
+        reason: "a predecessor belongs to a different account (63.2)",
+        expected_error: "E_DAG_UNROOTED",
+        expected: {
+          other_account_genesis_envelope_cbor: hex(otherE0Valid.envelope),
+          event_envelope_cbor: hex(e7.envelope),
+        },
+        checks: {
+          other_predecessor_submitted: verify(otherIdentity.priv, otherE0Valid.signatureInput, otherE0Valid.signature),
+          event_signature_valid: verify(deviceB.priv, e7.signatureInput, e7.signature),
+        },
+      },
+      "event-dependencies/negative-cross-account-predecessor"
+    ),
+    section(
+      {
+        reason: "event reuses an already-accepted event_id with different bytes (63.5, 10.8)",
+        expected_error: "E_EVENT_ID_COLLISION",
+        expected: { event_envelope_cbor: hex(e8.envelope) },
+        checks: {
+          signature_verifies: verify(deviceA.priv, e8.signatureInput, e8.signature),
+          collision_with_accepted_event_id: hex(e8.eventId) === hex(e1Id),
+          bytes_differ_from_accepted: hex(e8.envelope) !== hex(e1.envelope),
+        },
+      },
+      "event-dependencies/negative-event-id-collision"
+    ),
+    section(
+      {
+        reason: "two concurrent TRUSTED_DEVICE_TRANSFERRED events make trusted-device state ambiguous (42.3)",
+        expected_error: "E_TRUST_CONFLICT",
+        expected: {
+          transfer_1_envelope_cbor: hex(t1.envelope),
+          transfer_2_envelope_cbor: hex(t2.envelope),
+          event_envelope_cbor: hex(e10.envelope),
+        },
+        checks: {
+          transfer_1_signature_valid: verify(deviceA.priv, t1.signatureInput, t1.signature),
+          transfer_2_signature_valid: verify(deviceA.priv, t2.signatureInput, t2.signature),
+          neither_transfer_is_ancestor_of_the_other: !t1Preds.includes(t2Id) && !t2Preds.includes(t1Id),
+        },
+      },
+      "event-dependencies/negative-ambiguous-trusted-device"
+    ),
+  ];
+
+  return { positives, negatives };
+}
+
+// ---------------------------------------------------------------------------
 // RFC 9180 A.1 / A.3 self-test
 // ---------------------------------------------------------------------------
 
@@ -1919,6 +2398,7 @@ const f8 = fix8(f4);
 const f9 = fix9();
 const f10 = fix10();
 const f11 = fix11();
+const f12 = fix12();
 
 const selfTest = hpkeSelfTest();
 if (
@@ -1943,6 +2423,7 @@ writeFileSync(join(here, "federation-request.json"), JSON.stringify({ vectors: [
 writeFileSync(join(here, "media-streaming.json"), JSON.stringify({ vectors: [f9.positive, ...f9.negatives] }, null, 2) + "\n");
 writeFileSync(join(here, "username-grammar.json"), JSON.stringify({ vectors: f10.vectors }, null, 2) + "\n");
 writeFileSync(join(here, "relationship-events.json"), JSON.stringify({ vectors: [f11.positive, ...f11.negatives] }, null, 2) + "\n");
+writeFileSync(join(here, "event-dependencies.json"), JSON.stringify({ vectors: [...f12.positives, ...f12.negatives] }, null, 2) + "\n");
 
 console.log("HPKE RFC 9180 A.1 self-test:", JSON.stringify(selfTest, null, 2));
-console.log("Wrote first-device-authorization.json, hpke-object-key.json, object-encryption-aad.json, identifiers.json, canonical-cbor.json, event-signature.json, device-authorization.json, federation-request.json, media-streaming.json, username-grammar.json, relationship-events.json");
+console.log("Wrote first-device-authorization.json, hpke-object-key.json, object-encryption-aad.json, identifiers.json, canonical-cbor.json, event-signature.json, device-authorization.json, federation-request.json, media-streaming.json, username-grammar.json, relationship-events.json, event-dependencies.json");

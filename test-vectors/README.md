@@ -2,7 +2,7 @@
 
 Byte-exact vectors for deterministic Loopable Protocol operations, plus the generator that produces them.
 
-The vectors pin the bytes of the constructions that could not be left ambiguous: first-device authorization, HPKE object-key wrapping, versioned-object AAD (`decisions/0011`, `decisions/0012`, `decisions/0013`), identifier derivation, canonical CBOR, event and request signatures, device authorization and relationship event chains, streaming media encryption, and username grammar. The rest of the protocol's coverage plan is listed at the end.
+The vectors pin the bytes of the constructions that could not be left ambiguous: first-device authorization, HPKE object-key wrapping, versioned-object AAD (`decisions/0011`, `decisions/0012`, `decisions/0013`), identifier derivation, canonical CBOR, event and request signatures, device authorization and relationship event chains, event dependency validation with causal authorization, streaming media encryption, and username grammar. The rest of the protocol's coverage plan is listed at the end.
 
 ## Files
 
@@ -19,6 +19,7 @@ The vectors pin the bytes of the constructions that could not be left ambiguous:
 | `media-streaming.json` | Streaming media encryption: header, derived key, segment layout and sizes, and tamper/truncation rejection (`spec/35-media-encryption.md`). |
 | `username-grammar.json` | Username validity and rejection reasons, per `spec/11-accounts.md` 11.6. |
 | `relationship-events.json` | A follow/unfollow/block/unblock cycle with an encrypted `relationship` object and its recipient wrapping (`spec/34-event-types.md` 34.9, `spec/50-social-relationships.md`). |
+| `event-dependencies.json` | Event DAG validation and causal authorization: a valid applied chain, concurrent events both accepted, idempotent duplicate submission, and the missing-dependency, cycle, unrooted, cross-account, id-collision, and ambiguous trusted-device rejections (`spec/63-event-dependencies.md`, `spec/42-identity-and-authorization.md` 42.3). |
 | `generate.mjs` | Deterministic generator for all of the above. |
 
 ## Regenerating
@@ -27,7 +28,7 @@ The vectors pin the bytes of the constructions that could not be left ambiguous:
 node test-vectors/generate.mjs
 ```
 
-Requires Node.js 18 or newer. The generator uses only the Node `crypto` module and writes the eleven JSON files next to itself.
+Requires Node.js 18 or newer. The generator uses only the Node `crypto` module and writes the twelve JSON files next to itself.
 
 All inputs marked random in the protocol are instead derived from fixed seeds of the form `SHA-256("loopable-test-vector-v1" 0x00 || label)`, so the vectors are reproducible. Implementations MUST use a CSPRNG, per `spec/20-cryptographic-primitives.md` 20.11. The seeds in this directory are test data only and MUST NOT be used anywhere else.
 
@@ -62,7 +63,8 @@ Examples:
 * a revoked device signing a new event (`E_UNAUTHORIZED_DEVICE`);
 * a stale federation timestamp, a body hash that does not match, or a reused request id (`E_TIMESTAMP_OUT_OF_RANGE`, `E_SIGNATURE_INVALID`, `E_REPLAY`);
 * a truncated, tampered, or mis-flagged streaming media blob (`E_DECRYPTION_FAILED`);
-* a relationship event that targets the subject's own account (`E_BAD_REQUEST`).
+* a relationship event that targets the subject's own account (`E_BAD_REQUEST`);
+* a post whose dependency never arrives (`E_MISSING_DEPENDENCY`, held `PENDING`), a mutual dependency cycle (`E_DAG_CYCLE`), an unrooted event and a cross-account predecessor (`E_DAG_UNROOTED`), a reused event id with different bytes (`E_EVENT_ID_COLLISION`), and two concurrent trusted-device transfers (`E_TRUST_CONFLICT`).
 
 ## Remaining coverage plan
 

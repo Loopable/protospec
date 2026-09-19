@@ -31,7 +31,7 @@ Every media object MUST have an object ID, media type, plaintext byte count, enc
 
 ## 56.2 Encryption and transport
 
-Media objects use `encryption_suite` `1` (streaming media encryption, `35-media-encryption.md`). The encrypted payload MAY be large. The object envelope is identical to every other object (`33-object-envelope.md`): the envelope's `nonce` is empty and `ciphertext` holds the stream blob. The stream is carried wholly inside the envelope; it is never split across objects or references. Resumable upload and byte-range retrieval are defined in `35.10` and `35.11`.
+Media objects use `encryption_suite` `1` (streaming media encryption, `35-media-encryption.md`). The encrypted payload MAY be large. The object envelope is identical to every other object (`33-object-envelope.md`): the envelope's `nonce` is empty and `ciphertext` holds the stream blob. The stream is carried wholly inside the envelope; it is never split across objects or references. Large blobs are transported to the storing instance with the resumable upload flow and bound into the envelope at submission (`35.10`), so the blob never rides inside an object-creation request body; byte-range retrieval is defined in `35.11`.
 
 The encrypted representation MUST encrypt the complete canonical serialized `media_content` plaintext: `data` is a field of that plaintext, not a side channel, and the whole `media_content` is what `size`, the stream segments, and the AAD of `35.4` cover. Encryption segmentation MUST NOT create additional Loopable objects, object versions, or events.
 

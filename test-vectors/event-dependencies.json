@@ -1,0 +1,140 @@
+{
+  "vectors": [
+    {
+      "inputs": {
+        "genesis_event_id": "cf850f9cc7a114fb4a1cd96063d860fd",
+        "device_a_authorized_event_id": "d9a85b3448e1ff6c7bed04987c20b297",
+        "post_created_event_id": "84b7e8d033cf1968efd2bfe35b3c27a7",
+        "post_object_id": "8a2b4dd8d84b712271a7ada4acc6c71c339c6cfbdfa5971dd8987254e58e2c2c",
+        "post_version_id": "926eb4c9538737e1fac65b546cf74c2ebe0711121131dd87a60d43fd6ab2500f"
+      },
+      "expected": {
+        "genesis_envelope_cbor": "aa0063302e310150cf850f9cc7a114fb4a1cd96063d860fd0200035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d180440051a68e1e2500680078008a4005820a0449e5b75c1177ccf24e774301ef8976281707875c038ad21354c45e51755f1016464657073025820a23d8749337cb2b0871379fd1f31b03fbb138f71b89b4453adb2f5f6e4817a0403a70063302e31015820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1802509b82255e5b227ce02c96ccc2a887094403582088095944117678d6a21f04952e13e94e83f4ebaef34fa0577f03dc8eda10bf0a045820287e59b2c6ac1cca4f271c443fc76f7e33602ed9fbfd4f53680fad235fd4137c0500065840cf5f81c12f30cf9c13d131bd63699b9ecf4824ff4acea6c6a12fb76dedeb74522597641b9a6ecd713d85ae096b64b7fd9654f98bb3b02fe4006794a4cb2c6303095840625cf9636d2029c8b7091f724d4a837d384d51385694ae2f0a6214cf1390cf6669e9e0efbb9320b2d757dc4d2f15eae77f9b1568e4fc61edfdd29f6df447600d",
+        "device_auth_envelope_cbor": "aa0063302e310150d9a85b3448e1ff6c7bed04987c20b2970201035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804509b82255e5b227ce02c96ccc2a8870944051a68e1e250068150cf850f9cc7a114fb4a1cd96063d860fd078008a400503852833162f1d221c1d9bbbe57507e2e0158207238ef67421f3586b7da18401eb58b9d981281dd84768b04852896b9511d84e9025820bd665a8ded4be97d6be2e7c459452dcff7521bf7e19078d6a7604f790fabce2c03000958405b1324926ee5c4d9ca52a2830633de854978dde34704c535738a191403ebd886bb143fa46a7c0da5cd381d10968de0ebc061d980db9b5949d809c106ecbb170a",
+        "post_created_envelope_cbor": "aa0063302e31015084b7e8d033cf1968efd2bfe35b3c27a7020d035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804503852833162f1d221c1d9bbbe57507e2e051a68e1e251068250cf850f9cc7a114fb4a1cd96063d860fd50d9a85b3448e1ff6c7bed04987c20b2970781a20058208a2b4dd8d84b712271a7ada4acc6c71c339c6cfbdfa5971dd8987254e58e2c2c015820926eb4c9538737e1fac65b546cf74c2ebe0711121131dd87a60d43fd6ab2500f08a00958404c09a9a9b5f8023417b30b3fed99ceae7f115b1f19551e4615d269909354399792245d43d11cc251430998eddab9fb8f1a944ce4e6c6df6a917edbdbdcd09a02"
+      },
+      "checks": {
+        "genesis_signature_verifies": true,
+        "device_auth_signature_verifies": true,
+        "post_created_signature_verifies": true,
+        "predecessors_known": true,
+        "status": "VALIDATED -> APPLIED"
+      },
+      "_name": "event-dependencies/valid-chain-applied"
+    },
+    {
+      "inputs": {
+        "post_created_event_id": "84b7e8d033cf1968efd2bfe35b3c27a7",
+        "device_b_revoked_event_id": "548cef4c7f84d119e2ab140480d065cb"
+      },
+      "expected": {
+        "post_created_envelope_cbor": "aa0063302e31015084b7e8d033cf1968efd2bfe35b3c27a7020d035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804503852833162f1d221c1d9bbbe57507e2e051a68e1e251068250cf850f9cc7a114fb4a1cd96063d860fd50d9a85b3448e1ff6c7bed04987c20b2970781a20058208a2b4dd8d84b712271a7ada4acc6c71c339c6cfbdfa5971dd8987254e58e2c2c015820926eb4c9538737e1fac65b546cf74c2ebe0711121131dd87a60d43fd6ab2500f08a00958404c09a9a9b5f8023417b30b3fed99ceae7f115b1f19551e4615d269909354399792245d43d11cc251430998eddab9fb8f1a944ce4e6c6df6a917edbdbdcd09a02",
+        "device_revoked_envelope_cbor": "aa0063302e310150548cef4c7f84d119e2ab140480d065cb0202035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804509b82255e5b227ce02c96ccc2a8870944051a68e1e251068250cf850f9cc7a114fb4a1cd96063d860fd50d9a85b3448e1ff6c7bed04987c20b297078008a100503852833162f1d221c1d9bbbe57507e2e095840d4fd0c92a4d5f71594ac72190d8244c437d3b844f0b1011e15f8dbe371bdf5939104327e8d8f0277e2dfb964e9d8f4c29cd630359499d1a9f443b7131904bb09"
+      },
+      "checks": {
+        "post_signature_verifies": true,
+        "revoke_signature_verifies": true,
+        "revoke_is_concurrent_with_post": true,
+        "post_remains_valid_despite_concurrent_revoke": true,
+        "both_accepted": true
+      },
+      "_name": "event-dependencies/concurrent-events-both-accepted"
+    },
+    {
+      "inputs": {
+        "resubmitted_event_id": "d9a85b3448e1ff6c7bed04987c20b297"
+      },
+      "expected": {
+        "device_auth_envelope_cbor": "aa0063302e310150d9a85b3448e1ff6c7bed04987c20b2970201035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804509b82255e5b227ce02c96ccc2a8870944051a68e1e250068150cf850f9cc7a114fb4a1cd96063d860fd078008a400503852833162f1d221c1d9bbbe57507e2e0158207238ef67421f3586b7da18401eb58b9d981281dd84768b04852896b9511d84e9025820bd665a8ded4be97d6be2e7c459452dcff7521bf7e19078d6a7604f790fabce2c03000958405b1324926ee5c4d9ca52a2830633de854978dde34704c535738a191403ebd886bb143fa46a7c0da5cd381d10968de0ebc061d980db9b5949d809c106ecbb170a"
+      },
+      "checks": {
+        "signature_verifies": true,
+        "resubmission_status": "duplicate",
+        "no_second_state_transition": true
+      },
+      "_name": "event-dependencies/duplicate-submission-idempotent"
+    },
+    {
+      "reason": "event references a predecessor the instance has never seen (63.3)",
+      "expected_error": "E_MISSING_DEPENDENCY",
+      "expected": {
+        "event_envelope_cbor": "aa0063302e3101506dcc27429dbb505ac351057459345d800206035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804503852833162f1d221c1d9bbbe57507e2e051a68e1e253068150f365be2743f1155c1979f454d0d25648078008a1005820eb179d3fc4ed1a6975164bb810234ff70dbf7cdf821c5d266bf249862e4d2cb80958407af0883245b4228c65555416bd68fedd9bcce253b45daeb50222978b4b949105bd3edfdc4661783a247a5d037707fb052cc1d23781b42234d374a350c198cf0e",
+        "event_signature": "7af0883245b4228c65555416bd68fedd9bcce253b45daeb50222978b4b949105bd3edfdc4661783a247a5d037707fb052cc1d23781b42234d374a350c198cf0e",
+        "pending_state": "PENDING",
+        "details_missing": [
+          "f365be2743f1155c1979f454d0d25648"
+        ]
+      },
+      "checks": {
+        "signature_still_cryptographically_valid": true
+      },
+      "_name": "event-dependencies/negative-missing-dependency-pending"
+    },
+    {
+      "reason": "two events reference each other; the graph is cyclic (63.1)",
+      "expected_error": "E_DAG_CYCLE",
+      "expected": {
+        "cycle_a_envelope_cbor": "aa0063302e3101508a04f0874ae9ccc222b18dbdd8e57e540206035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804503852833162f1d221c1d9bbbe57507e2e051a68e1e254068150aa5eaf5ca7e872a9f07f074950de866a078008a1005820eb179d3fc4ed1a6975164bb810234ff70dbf7cdf821c5d266bf249862e4d2cb8095840184610e5734e9903756e1c8aa6d34dac67b174e3ccb04971a86a61e24df0116158b3213da191f87a0aa6856f27b08c8c4788677aec16047a262a68cc6df5d202",
+        "cycle_b_envelope_cbor": "aa0063302e310150aa5eaf5ca7e872a9f07f074950de866a0206035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804503852833162f1d221c1d9bbbe57507e2e051a68e1e2540681508a04f0874ae9ccc222b18dbdd8e57e54078008a1005820eb179d3fc4ed1a6975164bb810234ff70dbf7cdf821c5d266bf249862e4d2cb8095840f2f6ddf90f4958441e6c5c5139ca556148a9c51a890d0e5387da861091b3654623b8b38d12d283ddd1f29b993a1fbe29bbae7b46947d4363f0f3d5b83018590a"
+      },
+      "checks": {
+        "cycle_a_signature_valid": true,
+        "cycle_b_signature_valid": true
+      },
+      "_name": "event-dependencies/negative-mutual-cycle"
+    },
+    {
+      "reason": "a non-genesis event with no predecessors cannot trace to its ACCOUNT_CREATED (63.2)",
+      "expected_error": "E_DAG_UNROOTED",
+      "expected": {
+        "event_envelope_cbor": "aa0063302e310150b66adb0b3a0791a1ef7a82aa6b338291020d035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804503852833162f1d221c1d9bbbe57507e2e051a68e1e25506800781a20058208a2b4dd8d84b712271a7ada4acc6c71c339c6cfbdfa5971dd8987254e58e2c2c015820926eb4c9538737e1fac65b546cf74c2ebe0711121131dd87a60d43fd6ab2500f08a00958405798d12589eb11b848db1e687833fd183d41098f02912e75cad59c2292b011059d326a2dc012a3681a10dbaa707a4a9e3f4d6fa76d32c6707d2c3445309ebe04"
+      },
+      "checks": {
+        "signature_verifies": true,
+        "account_has_genesis_devices": true
+      },
+      "_name": "event-dependencies/negative-unrooted-event"
+    },
+    {
+      "reason": "a predecessor belongs to a different account (63.2)",
+      "expected_error": "E_DAG_UNROOTED",
+      "expected": {
+        "other_account_genesis_envelope_cbor": "aa0063302e310150e683de2312cc2ec7c3ab7ed2a7ac50780200035820eb179d3fc4ed1a6975164bb810234ff70dbf7cdf821c5d266bf249862e4d2cb80440051a68e1e2500680078008a4005820f9484e4904cda72198a718cedd1771f393976effa268a18d2f3abb0a9d73124201656f74686572025820a23d8749337cb2b0871379fd1f31b03fbb138f71b89b4453adb2f5f6e4817a0403a70063302e31015820eb179d3fc4ed1a6975164bb810234ff70dbf7cdf821c5d266bf249862e4d2cb802508d0dd7fee79e8811e1201383d23a6cff0358209437b14a139fb6c694da069957a69b8f3b5dcef772461b9023f0524cb417e5980458209d7d4c7ba6a01cf83659db5301013dbc9dcb902d214b5b38848d1ab9b26fc04105000658401af717deab9127cfbe969cc0f51b15d301e780bdc161c1a3d23214d9743067b21bb52161262d6c6a51ff89f30662f758b443291694d2b70d62341c4e08f993080958404cfee1e21f81b81f7881f68190aad446885caa20314e343305fe33ddea50f6f51ac25096b803252418ef4365b17175c588c3c2f0ab02c43553ea5041aa88e609",
+        "event_envelope_cbor": "aa0063302e310150011f41b1a6e25e400eb54bd64b1b50380206035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804503852833162f1d221c1d9bbbe57507e2e051a68e1e256068150e683de2312cc2ec7c3ab7ed2a7ac5078078008a1005820eb179d3fc4ed1a6975164bb810234ff70dbf7cdf821c5d266bf249862e4d2cb8095840754a544688c67a2fdeb5259f3124b693d0a4eba6f179982087e1b02bc0e9d4d7fbe879096caacd2589a02ef17c827fdea3cff4db8baa8327f5318b4bfe570b0e"
+      },
+      "checks": {
+        "other_predecessor_submitted": true,
+        "event_signature_valid": true
+      },
+      "_name": "event-dependencies/negative-cross-account-predecessor"
+    },
+    {
+      "reason": "event reuses an already-accepted event_id with different bytes (63.5, 10.8)",
+      "expected_error": "E_EVENT_ID_COLLISION",
+      "expected": {
+        "event_envelope_cbor": "aa0063302e310150d9a85b3448e1ff6c7bed04987c20b2970201035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804509b82255e5b227ce02c96ccc2a8870944051a68e1e257068150cf850f9cc7a114fb4a1cd96063d860fd078008a0095840106d0bbf0ee9a3e3a8412213a96df87f4ee1089d5de4b76a41289ffdd013b88aeb4923fd0833e01fa7c3f15ee106cee4cf99d675e24c8f965b02e64290713f03"
+      },
+      "checks": {
+        "signature_verifies": true,
+        "collision_with_accepted_event_id": true,
+        "bytes_differ_from_accepted": true
+      },
+      "_name": "event-dependencies/negative-event-id-collision"
+    },
+    {
+      "reason": "two concurrent TRUSTED_DEVICE_TRANSFERRED events make trusted-device state ambiguous (42.3)",
+      "expected_error": "E_TRUST_CONFLICT",
+      "expected": {
+        "transfer_1_envelope_cbor": "aa0063302e3101507e6babfb351812711f4ec006d801edaa0203035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804509b82255e5b227ce02c96ccc2a8870944051a68e1e25906835091eb509a41653787c6237e11ac60b16a50cf850f9cc7a114fb4a1cd96063d860fd50d9a85b3448e1ff6c7bed04987c20b297078008a100503852833162f1d221c1d9bbbe57507e2e095840bc6c70f2ec7fd8cdd73fdf0ea3c243ac7ee72bb73d42b00caea6fc451b1bd793280bfcf6e1447588c1b10ee5edc13d2aa663b1694f0176d442f7226773045408",
+        "transfer_2_envelope_cbor": "aa0063302e31015011d9e37f6ba6fbe3d1b2a730e8c630d80203035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804509b82255e5b227ce02c96ccc2a8870944051a68e1e25906835091eb509a41653787c6237e11ac60b16a50cf850f9cc7a114fb4a1cd96063d860fd50d9a85b3448e1ff6c7bed04987c20b297078008a1005014b5d96ef1424e742037c740b1ae6f4d0958407f3c88e247c5fe9adf12fe1b0f293edf69feacfa2fd11c75b08f8e12320d9c5bbcae1fb6bdd50294b34fe5ccfa1995e566152ee9fa79a616bd01b4b54d72ff0c",
+        "event_envelope_cbor": "aa0063302e310150e48c1d4537d7d0b505a6f03da54142bc0201035820b0b7dc94ebcb4c35c34b4016c61c3dd7b0bd4d6f4b1f2ac5ae0bb3d7e7ed9d1804509b82255e5b227ce02c96ccc2a8870944051a68e1e25a06855011d9e37f6ba6fbe3d1b2a730e8c630d8507e6babfb351812711f4ec006d801edaa5091eb509a41653787c6237e11ac60b16a50cf850f9cc7a114fb4a1cd96063d860fd50d9a85b3448e1ff6c7bed04987c20b297078008a40050060ff4398462ca0318ae3d3fe93f96130158205bb5cd650b55a2502ae330ac2c094a3021f7a10a7a7fca98503456d5b84fef9e025820b7a1fd67547f23a16ed56b707fee02404bb03689362221d23c84b4fc3713b8310300095840ee78b282d8f78bf250db42f805ee53eb60aa766cb781c7221ed875c10ac00aee7c55029a98820a2dd13ae363c18a50d4b44b27905ddcc77688cb86c652f7a301"
+      },
+      "checks": {
+        "transfer_1_signature_valid": true,
+        "transfer_2_signature_valid": true,
+        "neither_transfer_is_ancestor_of_the_other": true
+      },
+      "_name": "event-dependencies/negative-ambiguous-trusted-device"
+    }
+  ]
+}

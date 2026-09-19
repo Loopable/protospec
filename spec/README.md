@@ -57,6 +57,6 @@ The requirements are reorganized into the modules so that every requirement has 
 ## Companion artifacts
 
 * `schemas/` contains machine-readable CDDL definitions of the CBOR structures defined here.
-* `test-vectors/` contains byte-exact vectors and a deterministic generator for first-device authorization, HPKE object-key wrapping, versioned-object AAD, identifiers, canonical CBOR, event signatures, device authorization, federation request signing, media streaming encryption, username grammar, and relationship events, plus the remaining coverage plan.
+* `test-vectors/` contains byte-exact vectors and a deterministic generator for first-device authorization, HPKE object-key wrapping, versioned-object AAD, identifiers, canonical CBOR, event signatures, device authorization, federation request signing, media streaming encryption, username grammar, relationship events, and event dependency validation with causal authorization, plus the remaining coverage plan.
 * `examples/` contains complete, human-readable protocol exchanges.
 * `decisions/` records the design decisions behind this specification.

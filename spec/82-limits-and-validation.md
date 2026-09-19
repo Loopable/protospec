@@ -21,7 +21,7 @@ This module is the authoritative registry of protocol limits, validation require
 | Account lookup device summary | max 16 entries | `60.8` |
 | Sync page size | default 512 events | `62.5` |
 | Sync object budget | default 8 MiB per page | `62.5` |
-| Request body size | max 8 MiB; media upload blobs exempt, bounded by the media limit | `60-federation.md`, `35.10` |
+| Request body size | max 8 MiB; media ciphertext travels via the resumable upload endpoints and is bounded by the media plaintext limit (`35.10`) | `60-federation.md`, `35.10` |
 | Federation replay window | 300 s | `61.5` |
 | Username reservation | 90 days | `40.3` |
 | Operational key lifetime | SHALL be bounded; no protocol max | `13.3` |
