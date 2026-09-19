@@ -1,4 +1,4 @@
-# CONTRIBUTORS.md
+# CONTRIBUTING.md
 
 This repository contains the Loopable Protocol specification.
 
