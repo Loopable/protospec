@@ -54,7 +54,12 @@ fetch_event_result = {
 ; Sync (spec/62-synchronization.md section 62.2)
 sync_request = {
   ? 0 => bytes,                 ; cursor (absent = from the beginning)
-  ? 1 => [* uint],              ; interest (absent = all registered types)
+  ? 1 => interest_filter,       ; interest (absent = all permitted types)
+}
+
+interest_filter = {
+  ? 0 => [* uint],               ; event type codes
+  ? 1 => [* uint],               ; object type codes
 }
 
 sync_page = {

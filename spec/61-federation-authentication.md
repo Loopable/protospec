@@ -82,7 +82,13 @@ Failure at any step MUST produce the corresponding error code from `80-errors.md
 
 ## 61.6 Canonical path and query
 
-The signed `path` is the URL path beginning with `/`, percent-encoded canonically: uppercase hex escapes normalized to lowercase, and characters outside the unreserved set percent-encoded per RFC 3986. The signed `query` is the query string without the leading `?`, with parameters sorted by name (then by value) and each name and value percent-encoded canonically.
+The canonicalization algorithm is:
+
+1. The path MUST begin with `/`. Reject malformed percent escapes, NUL bytes, and `.` or `..` path segments. Preserve an existing trailing slash. Split the path at literal `/` separators, decode percent-encoded unreserved ASCII characters within each segment, then percent-encode every byte outside `A-Z a-z 0-9 - . _ ~`. Keep the `/` separators literal. Existing escapes for reserved bytes remain escapes, with lowercase hexadecimal digits. The path is otherwise not decoded or resolved.
+2. Parse the query as an ordered sequence of `name[=value]` parameters. A missing `=` has an empty value and canonicalizes to the same pair as `name=`. Decode percent-encoded unreserved ASCII characters, then percent-encode every byte outside the unreserved set in each name and value. Preserve duplicate parameters. Sort the resulting pairs by canonical encoded name, then canonical encoded value, using bytewise ascending order. Emit each pair as `name=value`, joined by `&`; emit the empty string when there are no parameters.
+3. Query sorting is performed on the canonical encoded bytes, not on decoded strings. No `+` to space conversion is performed. Invalid UTF-8 is permitted because canonicalization operates on bytes.
+
+For example, `/a/%2F/` canonicalizes to `/a/%2f/`; `/a/%7E` canonicalizes to `/a/~`; and `?b=2&a&a=1` canonicalizes to `a=&a=1&b=2`.
 
 ## 61.7 Replay protection
 

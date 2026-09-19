@@ -13,7 +13,7 @@ JSON MUST NOT be used as the cryptographic signing or encryption representation.
 An implementation producing the canonical encoding MUST:
 
 1. Use the preferred serialization of every value: the shortest encoding that represents the value, per RFC 8949 section 4.2.1.
-2. Encode unsigned integers with the minimal number of bytes needed (1, 2, 4, or 8 byte lengths); never expand an integer that fits in fewer bytes.
+2. Encode unsigned integers using RFC 8949 preferred serialization. Values `0..23` use the immediate-value form; larger values use the shortest additional-information form that represents them. Never expand an integer that fits in a shorter form.
 3. Encode text and byte strings with definite-length headers only. Indefinite-length encoding MUST NOT be used.
 4. Encode arrays and maps with definite-length headers only, and only as the number of elements they hold.
 5. Sort the entries of every map by their keys using the canonical order defined in `30.3`.

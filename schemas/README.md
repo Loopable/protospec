@@ -27,6 +27,8 @@ CDDL does not enforce canonical ordering, preferred integer lengths, or the abse
 
 The schemas define valid structures only. Negative test cases (wrong lengths, duplicate keys, non-canonical encodings, wrong types) are described in `spec/82-limits-and-validation.md` and the test-vector plan in `test-vectors/`.
 
+Conformance validation is layered. An implementation parses the CBOR and checks the matching CDDL structure, then applies the semantic rules in `spec/`, canonical-encoding checks, cryptographic checks, authorization checks, and finally application-state rules. CDDL alone does not determine event-body meaning, object-suite compatibility, signature validity, authorization, replay handling, or federation permissions.
+
 ## Files
 
 | File | Structures covered |

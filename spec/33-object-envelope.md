@@ -55,7 +55,7 @@ Every recipient MUST receive independently protected key material (an HPKE recor
 
 ## 33.6 Metadata
 
-The optional `metadata` map is not authenticated by the AES-GCM associated data. It MUST NOT carry keys found in the authenticated fields, MUST NOT carry sensitive plaintext, and MUST NOT be used for any security decision. Instances MAY read lossless metadata for routing and storage policy. Any change to the `metadata` map MUST NOT affect the ciphertext or its authentication.
+The optional `metadata` map is not authenticated by the AES-GCM associated data. It MUST NOT carry keys found in the authenticated fields or sensitive plaintext. Implementations MUST treat every metadata value as an attacker-controlled hint. Metadata MUST NOT affect recipient selection, authorization, object identity, object type, version selection, decryption-key selection, event validity, or federation authorization. Instances MAY read lossless metadata for non-authoritative routing and storage policy. Any change to the `metadata` map MUST NOT affect the ciphertext or its authentication.
 
 ## 33.7 Object type registry
 

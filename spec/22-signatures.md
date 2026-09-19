@@ -32,10 +32,12 @@ The event signature input is:
 "loopable-event-v1" 0x00 || deterministic_cbor(event map without key 9)
 ```
 
-The signature is computed with the signing device's Ed25519 private key:
+For `ACCOUNT_CREATED`, the signature is computed with the account identity's
+Ed25519 private key. For every other event, it is computed with the signing
+device's Ed25519 private key:
 
 ```text
-Ed25519.Sign(device_signing_private_key, signature_input)
+Ed25519.Sign(event_signing_private_key, signature_input)
 ```
 
 An event MUST NOT be accepted without a valid signature computed over exactly this input.
@@ -54,8 +56,8 @@ A receiving implementation MUST verify an event in the following order. Failure 
 2. Validate field types and lengths against `32-event-envelope.md` and `31-wire-types.md`.
 3. Validate the protocol version per `81-versioning-and-capabilities.md`.
 4. Validate the account and device identifiers per `10-identifiers.md`.
-5. Resolve the device authorization chain; validate it per `42-identity-and-authorization.md`.
-6. Verify the event signature using the device's Ed25519 public key over the signature input of `22.3`.
+5. If the event is `ACCOUNT_CREATED`, verify its signature with the account identity public key derived from the event, then validate its `FirstDeviceAuthorization` per `34.3` and `22.9`. Do not resolve a device authorization chain. For every other event, resolve the device authorization chain and validate it per `42-identity-and-authorization.md`.
+6. Verify the event signature with the key selected in step 5 over the signature input of `22.3`.
 7. Validate event dependencies per `63-event-dependencies.md`.
 8. Validate object references per `33-object-envelope.md`.
 9. Validate the event type's authorization requirements per `34-event-types.md`.
@@ -75,9 +77,9 @@ A valid event signature proves the signing device produced the event. It does no
 An event is authentic only when all of the following hold:
 
 ```text
-valid account identity      (42-identity-and-authorization.md)
-valid device authorization  (42-identity-and-authorization.md)
-valid device signature      (this module, 22.5)
+valid account identity      (42-identity-and-authorization.md, or the genesis event)
+valid device authorization  (42-identity-and-authorization.md, non-genesis only)
+valid event signature       (this module, 22.5)
 valid event structure       (32-event-envelope.md)
 valid dependencies          (63-event-dependencies.md)
 ```

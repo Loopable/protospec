@@ -14,7 +14,7 @@ If synchronization stops after event 100 of 200, the next synchronization MUST r
 
 The sync exchange is client-driven (a client here is the instance pulling data from a peer). The flow converges on a cursor:
 
-1. The pulling instance calls `POST /v1/sync` with body `{0: cursor: bytes (optional), 1: interest: array<uint> (optional)}`.
+1. The pulling instance calls `POST /v1/sync` with body `{0: cursor: bytes (optional), 1: interest: map (optional)}`.
 2. The serving instance returns a sync page:
 
 | Key | Field | Type | Required | Description |
@@ -27,18 +27,18 @@ The sync exchange is client-driven (a client here is the instance pulling data f
 3. The pulling instance validates every event per `22.5` and every object per `33-object-envelope.md`, requests missing dependencies per `63-event-dependencies.md`, and applies what becomes authoritative.
 4. After `more == false`, the pulling instance stores the final cursor as its sync state with the peer.
 
-The cursor is opaque, server-issued, and MUST be treated as uninterpretable bytes. It encodes the server-side watermark for the peer and interest filter.
+The cursor is opaque, server-issued, and MUST be treated as uninterpretable bytes. It encodes a server-side watermark for the peer and interest filter.
 
 ## 62.3 Interest filters
 
-An instance SHOULD synchronize only events relevant to its members (`60.7`). The optional `interest` array MAY contain event type codes (`34.2`) or object type codes to narrow retrieval; an empty or absent `interest` means "everything this peer is permitted to receive". The server MUST NOT include events the peer is not permitted to receive, regardless of `interest`.
+An instance SHOULD synchronize only events relevant to its members (`60.7`). The optional `interest` map has key `0` for an array of event type codes (`34.2`) and key `1` for an array of object type codes. Either array MAY be absent. An empty or absent map means "everything this peer is permitted to receive". The server MUST NOT include events the peer is not permitted to receive, regardless of `interest`.
 
 ## 62.4 Cursor semantics and resumption
 
 * A request without a cursor starts from the beginning of the peer's publishable stream.
 * A request with a cursor resumes after the point the cursor represents.
 * The cursor MUST be monotonic: pages returned for cursor `c` never include events already covered by `c`.
-* Serving the same cursor twice MUST return the same set of events (denoting the boundary), so a lost response is recoverable by resending the request.
+* A cursor is a watermark, not a snapshot. Serving the same cursor twice MAY return events published after the earlier request, but MUST never return an event at or before the cursor's covered position.
 * The serving instance SHOULD keep enough history to serve a reasonable resume window (RECOMMENDED at least 7 days of cumulative published events per peer); older data MAY require the pulling instance to fetch events explicitly by ID, per `60.6`.
 
 ## 62.5 Page size and budgets
